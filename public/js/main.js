@@ -1,118 +1,97 @@
-var config = {
-    type: Phaser.WEBGL,
-    width: 800,
-    height: 600,
-    parent: 'phaser-example',
-    pixelArt: true,
+let config = {
+    type: Phaser.AUTO,
+    width: 1024,
+    height: 768,
+    backgroundColor: '#006994',
+    // parent: 'main',
     physics: {
         default: 'matter',
         matter: {
             gravity: {
+                x: 0,
                 y: 0
-            },
-            debug: true
+            }
         }
     },
     scene: {
+        preload: preload,
         create: create,
         update: update
     }
 };
 
-var controls;
+let powerBoat;
+let cursors;
+let tideContstraints = [-0.3, 0.3]
+let windConstraints = [-0.3, 0.3]
 
-var game = new Phaser.Game(config);
+let game = new Phaser.Game(config);
 
-function create ()
-{
-    var worldWidth = 1600;
-    var worldHeight = 1200;
-
-    this.matter.world.setBounds(0, 0, worldWidth, worldHeight);
-
-    //  Create loads of random bodies
-    for (var i = 0; i < 100; i++)
-    {
-        var x = Phaser.Math.Between(0, worldWidth);
-        var y = Phaser.Math.Between(0, worldHeight);
-
-        if (Math.random() < 0.7)
-        {
-            var sides = Phaser.Math.Between(3, 14);
-            var radius = Phaser.Math.Between(8, 50);
-
-            this.matter.add.polygon(x, y, sides, radius, { restitution: 0.9 });
-        }
-        else
-        {
-            var width = Phaser.Math.Between(16, 128);
-            var height = Phaser.Math.Between(8, 64);
-
-            this.matter.add.rectangle(x, y, width, height, { restitution: 0.9 });
-        }
-    }
-
-    this.matter.add.mouseSpring();
-
-    var cursors = this.input.keyboard.createCursorKeys();
-
-    var controlConfig = {
-        camera: this.cameras.main,
-        left: cursors.left,
-        right: cursors.right,
-        up: cursors.up,
-        down: cursors.down,
-        zoomIn: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
-        zoomOut: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
-        acceleration: 0.06,
-        drag: 0.0005,
-        maxSpeed: 1.0
-    };
-
-    controls = new Phaser.Cameras.Controls.SmoothedKeyControl(controlConfig);
-
-    this.input.keyboard.on('KEY_DOWN_Z', function (event) {
-
-        this.cameras.main.rotation += 0.01;
-
-    }, 0, this);
-
-    this.input.keyboard.on('KEY_DOWN_X', function (event) {
-
-        this.cameras.main.rotation -= 0.01;
-
-    }, 0, this);
-
-    var cam = this.cameras.main;
-
-    gui = new dat.GUI();
-
-    var p1 = gui.addFolder('Pointer');
-    p1.add(this.input, 'x').listen();
-    p1.add(this.input, 'y').listen();
-    p1.open();
-
-    var help = {
-        line1: 'Cursors to move',
-        line2: 'Q & E to zoom',
-        line3: 'Z & X to rotate',
-    }
-
-    var f1 = gui.addFolder('Camera');
-    f1.add(cam, 'x').listen();
-    f1.add(cam, 'y').listen();
-    f1.add(cam, 'scrollX').listen();
-    f1.add(cam, 'scrollY').listen();
-    f1.add(cam, 'rotation').min(0).step(0.01).listen();
-    f1.add(cam, 'zoom', 0.1, 2).step(0.1).listen();
-    f1.add(help, 'line1');
-    f1.add(help, 'line2');
-    f1.add(help, 'line3');
-    f1.open();
-
+// BEB - leave preload, create, and update as fn declarations. 
+function preload() {
+    this.load.image('powerBoat', 'assets/yacht.png');
 }
 
-function update (time, delta)
-{
-    controls.update(delta);
+function create() {
+
+    powerBoat = this.matter.add.image(400, 300, 'powerBoat');
+
+    powerBoat.setFrictionAir(0.15);
+    powerBoat.setMass(30);
+    // BEB - It's unclear what this is doing...
+    powerBoat.setFixedRotation(0);
+
+
+    // powerBoat.setAcceleration(4,4);
+
+
+    this.matter.world.setBounds(0, 0, config.width, config.height);
+
+    // BEB - Sets up random wind and tide as "gravity" on the X,Y access.
+    // Isn't very realistic as both create a vector, but should each have
+    // there own vectors and then have them added together. This is an 
+    // area for improvment for sure. 
+    let wind = (Math.random() * (windConstraints[1] - windConstraints[0]) + windConstraints[0]);
+    let tide = (Math.random() * (tideContstraints[1] - tideContstraints[0]) + tideContstraints[0])
+    // this.matter.world.setGravity(wind, tide);
+
+
+    tracker1 = this.add.rectangle(0, 0, 4, 4, 0x00ff00);
+    tracker2 = this.add.rectangle(0, 0, 4, 4, 0xff0000);
+
+
+    cursors = this.input.keyboard.createCursorKeys();
+}
+
+function update() {
+    /* 
+    // Trying to create a more realistic turn. 
+    let point1 = powerBoat.getTopRight();
+    let point2 = powerBoat.getBottomRight();    
+
+    tracker1.setPosition(point1.x, point1.y);
+    tracker2.setPosition(point2.x, point2.y);
+
+    let speed = 0.10;
+    if (cursors.left.isDown) {
+        powerBoat.applyForceFrom({ x: point1.x, y: point1.y }, { x: -speed * Math.cos(powerBoat.body.angle), y: .5 });
+    } else if (cursors.right.isDown) {
+        powerBoat.applyForceFrom({ x: point2.x, y: point2.y }, { x: speed * Math.cos(powerBoat.body.angle), y: .5 });
+    }
+    */
+
+   let point1 = powerBoat.getTopRight();
+   let point2 = powerBoat.getBottomRight();    
+
+   tracker1.setPosition(point1.x, point1.y);
+   tracker2.setPosition(point2.x, point2.y);    
+
+    if (cursors.left.isDown) {
+        powerBoat.setAngularVelocity(-0.015);
+    } else if (cursors.right.isDown) {
+        powerBoat.setAngularVelocity(0.015);
+    }
+    if (cursors.up.isDown) {
+        powerBoat.thrust(0.02);
+    }
 }
