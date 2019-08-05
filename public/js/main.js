@@ -27,6 +27,7 @@ let config = {
 
 let powerBoat;
 let waterTexture;
+let buoys;
 let cursors;
 let tideContstraints = [-0.3, 0.3]
 let windConstraints = [-0.3, 0.3]
@@ -37,6 +38,7 @@ let game = new Phaser.Game(config);
 function preload() {
     this.load.image('powerBoat', 'assets/yacht.png');
     this.load.image('waterTexture', 'assets/water_texture.png');
+    this.load.image('buoy', 'assets/buoy.png');
 }
 
 function create() {
@@ -51,7 +53,7 @@ function create() {
     this.matter.world.setGravity(wind, tide);
 
     this.matter.world.setBounds(0, 0, config.width * 2, config.height * 2);
-    
+
     // Build the background:
     // https://photonstorm.github.io/phaser3-docs/Phaser.GameObjects.TileSprite.html
     // waterTexture = this.add.tileSprite(config.width / 2, config.height / 2, config.width, config.height, 'waterTexture');
@@ -65,6 +67,26 @@ function create() {
     // waterTexture.transform.scale(config.width);       
     // waterTexture.setTileScale(1024, 768);
 
+	function wall(x, y, width, height, color, angle = 0) {
+		return this.matter.world.Bodies.rectangle(x, y, width, height, {
+			angle: angle,
+			isStatic: true,
+			chamfer: { radius: 10 },
+			render: {
+				fillStyle: color
+			}
+		});
+	}
+
+    wall(220,200,90,90, '#15aabf');
+
+    // BEB - Build some static buoys
+    buoy = this.matter.add.image(250, 250, 'buoy');
+    buoy.setFrictionAir(1.0);
+    buoy.setMass(90);
+    buoy.flipX = true;
+    buoy.flipY = true;
+    // powerBoat.setFixedRotation(0); // BEB - It's unclear what
 
 
 
@@ -72,7 +94,7 @@ function create() {
     powerBoat = this.matter.add.image(400, 300, 'powerBoat');
     powerBoat.setFrictionAir(0.15);
     powerBoat.setMass(30);
-    powerBoat.setFixedRotation(0);  // BEB - It's unclear what this is doing...
+    powerBoat.setFixedRotation(0); // BEB - It's unclear what this is doing...
 
     tracker1 = this.add.rectangle(0, 0, 4, 4, 0x00ff00);
     tracker2 = this.add.rectangle(0, 0, 4, 4, 0xff0000);
@@ -87,7 +109,7 @@ function create() {
     // this.matter.world.setBounds(-randomWidth/2, -randomHeight/2, randomWidth, randomHeight);
     this.cameras.main.setBounds(0, 0, config.width * 2, config.height * 2);
     this.cameras.main.startFollow(powerBoat);
-    this.cameras.main.followOffset.set(0, 0);  // unnecessary?
+    this.cameras.main.followOffset.set(0, 0); // unnecessary?
 
     cursors = this.input.keyboard.createCursorKeys();
 }
@@ -108,8 +130,8 @@ function update() {
         powerBoat.applyForceFrom({ x: point2.x, y: point2.y }, { x: speed * Math.cos(powerBoat.body.angle), y: .5 });
     }
     */
-//    game.debug.cameraInfo(game.camera, 20, 20);
-   
+    //    game.debug.cameraInfo(game.camera, 20, 20);
+
     let point1 = powerBoat.getTopRight();
     let point2 = powerBoat.getBottomRight();
 
