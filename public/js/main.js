@@ -12,13 +12,13 @@ let config = {
         x: 0,
         y: 0
       },
-      debug: true,
+      // debug: true,
       // debugShowBody: true,
       // debugShowVelocity: true,
       // debugWireframes: true
     },
     arcade: {
-      debug: true,
+      // debug: true,
       // gravity: { y: 200 }
     }
   },
@@ -69,7 +69,9 @@ function preload() {
 
 function create() {
   // Build the world:
-  this.matter.world.setBounds(0, 0, bW, bH);
+  let world = this.matter.world;
+  world.setBounds(0, 0, bW, bH);
+  world.label = 'boundary'; // is this working?
 
   // BEB - Sets up random wind and tide as "gravity" on the X,Y access.
   // Isn't very realistic as both create a vector, but should each have
@@ -106,6 +108,12 @@ function create() {
   startingBuoyStarboard.flipX = true;
   startingBuoyStarboard.flipY = true;
 
+  // the x coord here seems to centered in the rect.
+  let startingGateSensor = this.matter.add.rectangle(((bW / 2)), (bH - 200), 200, 10, {
+    isSensor: true,
+    label: 'startingGateSensor',
+    isStatic: true
+  });
 
   let endingBuoyPort = this.matter.add.sprite((bW / 2) - 100, 200, 'plainBuoy', null, {
     isStatic: true
@@ -119,54 +127,66 @@ function create() {
   endingBuoyStarboard.flipY = true;
 
   // the x coord here seems to centered in the rect.
-  let startingGateSensor = this.matter.add.rectangle(((bW / 2)), (bH - 200), 200, 40, {
+  let endingGateSensor = this.matter.add.rectangle(((bW / 2)), 200, 200, 10, {
     isSensor: true,
-    label: 'startingGate',
+    label: 'endingGateSensor',
     isStatic: true
   });
-
-  startingGateSensor.fillStyle = 0xff0000;
 
 
   // Manage all collisions:
   this.matter.world.on('collisionstart', function (event) {
     let collPairs = event.pairs;
 
-    console.log(`${collPairs}`);
+    // console.log(`${collPairs}`);
 
     for (let i = 0; i < collPairs.length; i++) {
       let pair = collPairs[i];
-      pair.bodyA.render.fillStyle = 0xff0000;
-      pair.bodyB.render.fillStyle = 0xff0000;
 
       // isSensor
       switch (true) {
-        case (collPairs[i].isSensor):
+        case (collPairs[i].isSensor && collPairs[i].bodyB.gameObject.label === 'playerObject'):
           console.log(`Start or finishing gate crossed.`);
           break;
           // buoy
-        case (!collPairs[i].isSensor):
-          console.log(`Doh! Those don't move...`);
-          break;
+          // case (1 === 1):
+          //   console.log(`Player 1 Collision!!!`);
+          //   break;
           // other vessel
         default:
-          console.log(`Watch where your going noob!!`);
+          if (collPairs[i].bodyA.gameObject) {
+            console.log(`Watch where your going noob!!`);
+            console.log(`${collPairs[i].bodyA.gameObject.label} collided with ${collPairs[i].bodyB.gameObject.label}`);
+          } else {
+            console.log(`${collPairs[i].bodyB.gameObject.label} collided with a border... I think.`)
+            // console.log(collPairs[i]);
+
+            // // remove game object when it collides with the "borders"
+            // // does not work
+            // for(let x = 0; x < powerTargets.length; x++) {
+            //   console.log(collPairs[i].bodyB.gameObject.label);
+            //   if (powerTargets[x].label === collPairs[i].bodyB.gameObject.label) {
+            //     powerTargets.splice(x, 1);
+            //     x--;
+            //     // world.remove();
+            //   }
+            // }
+
+          }
           break;
       }
-
-
     }
   });
 
 
 
   // Build player boat.
-  player1 = this.matter.add.image(bW / 2, bH - 100, 'powerBoat');
-  // player1.setFixedRotation(0); // BEB - It's unclear what
+  player1 = this.matter.add.image(bW / 2, bH - 100, 'powerBoat'); // player1.setFixedRotation(0); // BEB - It's unclear what 
   player1.angle = -90;
+  player1.label = 'playerObject';
   player1.setFrictionAir(0.15);
   player1.setMass(30);
-  player1.setFixedRotation(0); // BEB - It's unclear what this is doing...
+  // player1.setFixedRotation(0); // BEB - It's unclear what this is doing...
   tracker1 = this.add.rectangle(0, 0, 4, 4, 0x00ff00);
   tracker2 = this.add.rectangle(0, 0, 4, 4, 0xff0000);
 
@@ -195,18 +215,17 @@ function create() {
 
 
   // Build powerTargets
-  for (let i = 0; i < 5; i++) {
-      powerTargets[i] = this.matter.add.image(getRand(0, config.width * 2, 'int'), getRand(0, config.height * 2, 'int'), 'powerBoat', null, {
-          // isStatic: true,
-      });
-      // powerTargets[i].flipX = true;
-      // powerTargets[i].flipY = true;
-      powerTargets[i].angle = getRand(0,360,'int');
-      powerTargets[i].setFrictionAir(0.15);
-      powerTargets[i].setMass(30);
+  for (let i = 0; i < 2; i++) {
+    powerTargets[i] = this.matter.add.image(getRand(0, config.width, 'int'), getRand(0, config.height, 'int'), 'powerBoat', null, {
+      // isStatic: true,
+    });
+    // powerTargets[i].flipX = true;
+    // powerTargets[i].flipY = true;
+    powerTargets[i].angle = getRand(0, 360, 'int');
+    powerTargets[i].setFrictionAir(0.15);
+    powerTargets[i].setMass(30);
+    powerTargets[i].label = 'powerTarget' + i;
   }
-
-
 
   // Setup the camera to follow:
   this.cameras.main.setBounds(0, 0, bW, bH);
