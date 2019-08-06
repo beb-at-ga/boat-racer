@@ -2,7 +2,7 @@ let config = {
   type: Phaser.AUTO,
   width: 1024,
   height: 768,
-  boardScale: 2,
+  boardScale: 1,
   backgroundColor: '#006994',
   // parent: 'main',
   physics: {
@@ -41,6 +41,7 @@ let bH = config.height * config.boardScale;
 let timePenelty = 0; // will add to timePeneklty for each collision
 let raceTimer = 0; // increment by time... 
 let timerInterval;
+let numPowerTargets = 0;
 
 let game = new Phaser.Game(config);
 
@@ -77,7 +78,7 @@ function create() {
   // Build the world:
   let world = this.matter.world;
   world.setBounds(0, 0, bW, bH);
-  world.label = 'boundary'; // is this working?
+  world.label = 'moBoundary'; // is this working?
 
   // BEB - Sets up random wind and tide as "gravity" on the X,Y access.
   // Isn't very realistic as both create a vector, but should each have
@@ -104,10 +105,12 @@ function create() {
   // place a sensor rectangle between them.
   // watch for when the player1 object interacts with the sensor.
   let startingBuoyPort = this.matter.add.sprite((bW / 2) - 100, (bH - 200), 'greenBuoy', null, {
-    isStatic: true
+    isStatic: true,
+    label: 'moMarkerBuoy'
   });
   let startingBuoyStarboard = this.matter.add.sprite((bW / 2) + 100, (bH - 200), 'redBuoy', null, {
-    isStatic: true
+    isStatic: true,
+    label: 'moMarkerBuoy'
   });
   startingBuoyPort.flipX = true;
   startingBuoyPort.flipY = true;
@@ -117,15 +120,17 @@ function create() {
   // the x coord here seems to centered in the rect.
   let startingGateSensor = this.matter.add.rectangle(((bW / 2)), (bH - 200), 200, 10, {
     isSensor: true,
-    label: 'startingGateSensor',
+    label: 'moStartingGateSensor',
     isStatic: true
   });
 
   let endingBuoyPort = this.matter.add.sprite((bW / 2) - 100, 200, 'greenBuoy', null, {
-    isStatic: true
+    isStatic: true,
+    label: 'moMarkerBuoy'
   });
   let endingBuoyStarboard = this.matter.add.sprite((bW / 2) + 100, 200, 'redBuoy', null, {
-    isStatic: true
+    isStatic: true,
+    label: 'moMarkerBuoy'
   });
   endingBuoyPort.flipX = true;
   endingBuoyPort.flipY = true;
@@ -135,74 +140,16 @@ function create() {
   // the x coord here seems to centered in the rect.
   let endingGateSensor = this.matter.add.rectangle(((bW / 2)), 200, 200, 10, {
     isSensor: true,
-    label: 'endingGateSensor',
+    label: 'moEndingGateSensor',
     isStatic: true
   });
 
-
-  // Manage all collisions:
-  this.matter.world.on('collisionstart', function (event) {
-    let collPairs = event.pairs;
-
-    // console.log(`${collPairs}`);
-
-    for (let i = 0; i < collPairs.length; i++) {
-      let pair = collPairs[i];
-
-      // isSensor
-      switch (true) {
-        // Player collides with starting gate. Should determine directionality...
-        case (collPairs[i].isSensor && collPairs[i].bodyA.label === 'startingGateSensor' && collPairs[i].bodyB.gameObject.label === 'playerObject'):
-          console.log(`Starting gate crossed.`);
-          if (!timerInterval) {
-            timerInterval = setInterval(function () {
-              raceTimer += 1;
-              raceTimeText.setText('Total Time: ' + raceTimer);
-            }, 1000);
-          }
-          break;
-          // Player collides with ending gate. Stop the timer (should determine directionality)
-        case (collPairs[i].isSensor && collPairs[i].bodyA.label === 'endingGateSensor' && collPairs[i].bodyB.gameObject.label === 'playerObject'):
-          console.log(`Ending gate crossed.`);
-          if (timerInterval > 0) {
-            clearInterval(timerInterval);
-          }
-          break;
-          // buoy
-          // case (1 === 1):
-          //   console.log(`Player 1 Collision!!!`);
-          //   break;
-          // other vessel
-        default:
-          if (collPairs[i].bodyA.gameObject) {
-            // console.log(`Watch where your going noob!!`);
-            // console.log(`${collPairs[i].bodyA.gameObject.label} collided with ${collPairs[i].bodyB.gameObject.label}`);
-          } else {
-            // console.log(`${collPairs[i].bodyB.gameObject.label} collided with a border... I think.`)
-            // console.log(collPairs[i]);
-
-            // // remove game object when it collides with the "borders"
-            // // does not work
-            // for(let x = 0; x < powerTargets.length; x++) {
-            //   console.log(collPairs[i].bodyB.gameObject.label);
-            //   if (powerTargets[x].label === collPairs[i].bodyB.gameObject.label) {
-            //     powerTargets.splice(x, 1);
-            //     x--;
-            //     // world.remove();
-            //   }
-            // }
-
-          }
-          break;
-      }
-    }
-  });
-
-
   // Build player boat.
-  player1 = this.matter.add.image(bW / 2, bH - 100, 'powerBoat'); // player1.setFixedRotation(0); // BEB - It's unclear what 
+  player1 = this.matter.add.image(bW / 2, bH - 100, 'powerBoat', null, {
+    label: 'moPlayer1'
+  }); // player1.setFixedRotation(0); // BEB - It's unclear what 
   player1.angle = -90;
-  player1.label = 'playerObject';
+  player1.label = 'goPlayer1';
   player1.setFrictionAir(0.15);
   player1.setMass(30);
   // player1.setFixedRotation(0); // BEB - It's unclear what this is doing...
@@ -218,23 +165,22 @@ function create() {
   // TODO - copy powerTargets and modify.
 
 
-
   // Build staticTargets or other targets.
   let plainBuoys = [];
   for (let i = 0; i < 5; i++) {
     plainBuoys[i] = this.matter.add.sprite(getRand(0, config.width * 2, 'int'), getRand(0, config.height * 2, 'int'), 'plainBuoy', null, {
       isStatic: true,
+      label: 'moPlainBuoy'
     });
     plainBuoys[i].flipX = true;
     plainBuoys[i].flipY = true;
-    plainBuoys[i].label = 'plainBuoy' + i;
+    // interesting. this is a gameobject, where they preceeding lable is a matter body label...
+    plainBuoys[i].label = 'goPlayBuoy' + i;
   }
 
-  // Build navAids (red/green marker buoys)
-  // TODO
 
   // Build powerTargets
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < numPowerTargets; i++) {
     powerTargets[i] = this.matter.add.image(getRand(0, config.width, 'int'), getRand(0, config.height, 'int'), 'powerBoat', null, {
       // isStatic: true,
     });
@@ -243,9 +189,72 @@ function create() {
     powerTargets[i].angle = getRand(0, 360, 'int');
     powerTargets[i].setFrictionAir(0.15);
     powerTargets[i].setMass(30);
-    powerTargets[i].label = 'powerTarget' + i;
+    powerTargets[i].label = 'goPowerTarget' + i;
   }
 
+
+  // Manage all collisions:
+  this.matter.world.on('collisionstart', function (event) {
+    let collPairs = event.pairs;
+
+    // console.log(`${collPairs}`);
+
+    for (let i = 0; i < collPairs.length; i++) {
+      let pair = collPairs[i];
+
+      bALabel = pair.bodyA.label;
+      bBLabel = pair.bodyB.label;
+
+      switch (true) {
+        // Player collides with starting gate. Start the timer (should determine directionality)
+        case (pair.isSensor && (bALabel === 'moPlayer1' || bBLabel === 'moPlayer1') && (bALabel === 'moStartingGateSensor' || bBLabel === 'moStartingGateSensor')):
+          if (!timerInterval) {
+            timerInterval = setInterval(function () {
+              raceTimer += 1;
+              raceTimeText.setText('Total Time: ' + raceTimer);
+            }, 1000);
+          }
+          break;
+          // Player collides with ending gate. Stop the timer (should determine directionality)
+        case (pair.isSensor && (bALabel === 'moPlayer1' || bBLabel === 'moPlayer1') && (bALabel === 'moEndingGateSensor' || bBLabel === 'moStartingGateSensor')):
+          if (timerInterval > 0) {
+            clearInterval(timerInterval);
+          }
+          break;
+          // plain buoy
+        case ((bALabel === 'moPlayer1' || bALabel === 'moPlainBuoy') && (bBLabel === 'moPlayer1' || bBLabel === 'moPlainBuoy')):
+          console.log(`moPlayer1 collided with a plain buoy!!!`);
+          break;
+          // marker buoy
+        case ((bALabel === 'moPlayer1' || bALabel === 'moMarkerBuoy') && (bBLabel === 'moPlayer1' || bBLabel === 'moMarkerBuoy')):
+          console.log(`moPlayer1 collided with a marker buoy!!!`);
+          break;
+          // other vessel
+        default:
+          // console.log(`${pair.bodyA.label} collided with ${pair.bodyB.label}`);
+          if (pair.bodyA.gameObject) {
+            // console.log(`Watch where your going noob!!`);
+            // console.log(`${pair.bodyA.gameObject.label} collided with ${pair.bodyB.gameObject.label}`);
+          } else {
+            // console.log(`${pair.bodyB.gameObject.label} collided with a border... I think.`)
+            // console.log(pair);
+
+            // // remove game object when it collides with the "borders"
+            // // does not work
+            // for(let x = 0; x < powerTargets.length; x++) {
+            //   console.log(pair.bodyB.gameObject.label);
+            //   if (powerTargets[x].label === pair.bodyB.gameObject.label) {
+            //     powerTargets.splice(x, 1);
+            //     x--;
+            //     // world.remove();
+            //   }
+            // }
+
+          }
+          break;
+      }
+    }
+  });
 
   // Setup the camera to follow:
   this.cameras.main.setBounds(0, 0, bW, bH);
