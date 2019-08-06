@@ -1,2 +1,14 @@
 @import 'resets.css';
 
+body {
+    width: 100%;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2em;
+}
+/* 
+main {
+    margin: 0 auto;
+} */
