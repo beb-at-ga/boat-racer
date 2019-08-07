@@ -9,18 +9,17 @@
 //   }
 // }
 
-class OpeningScene extends Phaser.Class {
+class OpeningScene extends Phaser.Scene {
 
   constructor() {
     super('openingScene');
   }
-
+  initialize() {}
   preload() {
     this.load.image('waterTexture', 'assets/waterTexture.png');
   }
   create() {
     addBackgroundTiles(this);
-
     this.input.keyboard.on('keydown', function () {
       this.scene.switch('gameScene');
     }, this);
@@ -35,7 +34,7 @@ class OpeningScene extends Phaser.Class {
   update() {}
 }
 
-class GameOverScene extends Phaser.Class {
+class GameOverScene extends Phaser.Scene {
 
   constructor() {
     super('gameOverScene');
@@ -61,26 +60,53 @@ class GameOverScene extends Phaser.Class {
   update() {}
 }
 
-class StatusScene extends Phaser.Class {
+class StatusScene extends Phaser.Scene {
   constructor() {
     super('statusScene');
   }
   preload() {}
   create() {
-    this.add.text(0, 0, "Status Scene Overlay", {
+
+    let raceTimeText = this.add.text(0, 0, null, {
       font: '32px Arial',
       fill: '#ffffff',
       align: 'center',
-      strokeThickness: 3
+      fontFamily: '"Roboto Condensed"',
+      strokeThickness: 2
     });
+    raceTimeText.fixedToCamera = true;
+
+
+    if (!timerInterval) {
+      timerInterval = setInterval(function () {
+        raceTimer += 1;
+        switch (raceTimer) {
+          case -36:
+            raceTimeText.setText('Ready!');
+            break;
+          case -33:
+            raceTimeText.setText('Set!');
+            break;
+          case -30:
+            raceTimeText.setText('GO!');
+            break;
+        }
+
+        if (raceTimer < 0 && raceTimer >= -29) {
+          raceTimeText.setText(`${-raceTimer}`);
+        }
+      }, 1000);
+    }
+
+
   }
   update() {}
 }
 
-class GameScene extends Phaser.Class {
+class GameScene extends Phaser.Scene {
 
   constructor() {
-    super('openingScene');
+    super('gameScene');
     // this.waterTexture;
     // this.powerBoat;
     // this.plainBuoy;
@@ -94,8 +120,33 @@ class GameScene extends Phaser.Class {
     this.load.image('plainBuoy', 'assets/plainBuoy.png');
     this.load.image('redBuoy', 'assets/redBuoy.png');
     this.load.image('greenBuoy', 'assets/greenBuoy.png');
+    this.load.spritesheet('kaboom', 'assets/explode.png', {
+      frameWidth: 128,
+      frameHeight: 128
+    });
+
   }
   create() {
+
+    let explosionAudio = new Audio('assets/explosion.mp3');
+
+
+    this.anims.create({
+      key: 'explode',
+      frames: this.anims.generateFrameNumbers('kaboom', {
+        start: 0,
+        end: 15
+      }),
+      frameRate: 16,
+      repeat: 0,
+      hideOnComplete: true
+    });
+
+    let explosions = this.add.group({
+      defaultKey: 'kaboom',
+      maxSize: 30
+    });
+
     // Add the status scene to this one. 
     game.scene.start('statusScene');
     // this.scene.add('statusScene', StatusScene, true);
@@ -119,8 +170,6 @@ class GameScene extends Phaser.Class {
     // place to static starting buoys.
     // place a sensor rectangle between them.
     // watch for when the player1 object interacts with the sensor.
-
-
 
     let startingBuoyPort = this.matter.add.sprite((bW / 2) - 100, (bH - 200), 'greenBuoy', null, {
       isStatic: true,
@@ -173,12 +222,18 @@ class GameScene extends Phaser.Class {
     }); // player1.setFixedRotation(0); // BEB - It's unclear what 
     player1.angle = -90;
     player1.label = 'goPlayer1';
-    player1.setFrictionAir(0.15);
+    player1.setFrictionAir(0.15, 0);
     player1.setMass(30);
     player1.hullStrengh = 100;
+    player1.setAllowDrag = true;
+    // player1.setDrag(100, 0);
+    // this.body.setFriction(0.7, 0)
+
+
+
     // player1.setFixedRotation(0); // BEB - It's unclear what this is doing...
-    tracker1 = this.add.rectangle(0, 0, 4, 4, 0x00ff00);
-    tracker2 = this.add.rectangle(0, 0, 4, 4, 0xff0000);
+    let tracker1 = this.add.rectangle(0, 0, 4, 4, 0x00ff00);
+    let tracker2 = this.add.rectangle(0, 0, 4, 4, 0xff0000);
 
 
     // Build sailTargets
@@ -191,8 +246,8 @@ class GameScene extends Phaser.Class {
 
     // Build staticTargets or other targets.
     let plainBuoys = [];
-    for (let i = 0; i < 5; i++) {
-      plainBuoys[i] = this.matter.add.sprite(getRand(0, config.width * 2, 'int'), getRand(0, config.height * 2, 'int'), 'plainBuoy', null, {
+    for (let i = 0; i < numPlainBuoys; i++) {
+      plainBuoys[i] = this.matter.add.sprite(getRand(0, bW, 'int'), getRand(0, bH, 'int'), 'plainBuoy', null, {
         isStatic: true,
         label: 'moPlainBuoy',
         damage: 20
@@ -203,12 +258,11 @@ class GameScene extends Phaser.Class {
       plainBuoys[i].label = 'goPlayBuoy' + i;
     }
 
-
     // Build powerTargets
     for (let i = 0; i < numPowerTargets; i++) {
-      powerTargets[i] = this.matter.add.image(getRand(0, config.width, 'int'), getRand(0, config.height, 'int'), 'powerBoat', null, {
-        // isStatic: true,
-        damage: 30
+      powerTargets[i] = this.matter.add.image(getRand(0, bW, 'int'), getRand(0, bH, 'int'), 'powerBoat', null, {
+        damage: 5,
+        label: 'moPowerTarget'
       });
       powerTargets[i].angle = getRand(0, 360, 'int');
       powerTargets[i].setFrictionAir(0.15);
@@ -225,36 +279,34 @@ class GameScene extends Phaser.Class {
       for (let i = 0; i < collPairs.length; i++) {
         let pair = collPairs[i];
 
-        bALabel = pair.bodyA.label;
-        bBLabel = pair.bodyB.label;
+        let bALabel = pair.bodyA.label;
+        let bBLabel = pair.bodyB.label;
 
         switch (true) {
           // Player collides with starting gate. Start the timer (should determine directionality)
           case (pair.isSensor && (bALabel === 'moPlayer1' || bBLabel === 'moPlayer1') && (bALabel === 'moStartingGateSensor' || bBLabel === 'moStartingGateSensor')):
-            if (!timerInterval) {
-              timerInterval = setInterval(function () {
-                raceTimer += 1;
-                raceTimeText.setText('Total Time: ' + raceTimer);
-              }, 1000);
-            }
+            console.log('moPlayer1 crossed starting gate.');
             break;
             // Player collides with ending gate. Stop the timer (should determine directionality)
           case (pair.isSensor && (bALabel === 'moPlayer1' || bBLabel === 'moPlayer1') && (bALabel === 'moEndingGateSensor' || bBLabel === 'moStartingGateSensor')):
-            if (timerInterval > 0) {
-              clearInterval(timerInterval);
-            }
+            clearInterval(timerInterval);
+            // if raceTimer < 0, we have a winner!
+
+            game.scene.stop('statusScene');
+            game.scene.start('gameOverScene');
             break;
             // plain buoy
           case ((bALabel === 'moPlayer1' || bALabel === 'moPlainBuoy') && (bBLabel === 'moPlayer1' || bBLabel === 'moPlainBuoy')):
             player1.hullStrengh -= collPairs[i].bodyB.damage;
-
             break;
             // marker buoy
           case ((bALabel === 'moPlayer1' || bALabel === 'moMarkerBuoy') && (bBLabel === 'moPlayer1' || bBLabel === 'moMarkerBuoy')):
             player1.hullStrengh -= collPairs[i].bodyA.damage;
+            // console.log(pair);
+            break;
+          case ((bALabel === 'moPlayer1' || bALabel === 'moPlayer1') && (bBLabel === 'moPowerTarget' || bBLabel === 'moPowerTarget')):
             console.log(pair);
-
-            console.log(`moPlayer1 collided with a marker buoy!!!`);
+            player1.hullStrengh -= collPairs[i].bodyB.damage;
             break;
             // other vessel
           default:
@@ -281,46 +333,44 @@ class GameScene extends Phaser.Class {
             break;
         }
 
-
         if (player1.hullStrengh <= 50 && player1.hullStrengh > 20) {
           console.log('Boat is yellow.')
         } else if (player1.hullStrengh <= 20 && player1.hullStrengh >= 0) {
           console.log('Boat is red.')
         } else if (player1.hullStrengh < 0) {
           console.log('Boat is on fire and game is over.')
+          explosionAudio.play();
+          // Get the first explosion, and activate it.
+          let explosion = explosions.get().setActive(true);
 
-          game.scene.start('gameOverScene');
+          explosion.setOrigin(0.5, 0.5);
+          explosion.x = player1.x;
+          explosion.y = player1.y;
+          explosion.play('explode');
+
+          explosion.on('animationcomplete', function () {
+            explosion.destroy()
+
+            setTimeout(function () {
+              game.scene.start('gameOverScene');
+              game.scene.stop('statusScene');
+            }, 3000);
+
+          });
+
 
         }
-        console.log(`moPlayer1 collided with a plain buoy! Hull strength down to ${player1.hullStrengh}`);
 
       }
     });
 
 
 
-    raceTimeText = this.add.text(200, 500, "this text is fixed to the camera", {
-      font: '32px Arial',
-      fill: '#ffffff',
-      align: 'center',
-      strokeThickness: 3
-    });
-    raceTimeText.fixedToCamera = true;
-
-    // raceTimeText = this.add.text(0, 0, 'Hello World', {
-    //   fontFamily: '"Roboto Condensed"'
-    // });
-
-    // raceResultsText1 = this.add.text(0, 32, '0');
-    // raceResultsText2 = this.add.text(0, 64, '0');
-
     // Setup the camera to follow:
     this.cameras.main.setBounds(0, 0, bW, bH);
     this.cameras.main.startFollow(player1);
     this.cameras.main.followOffset.set(0, 0); // unnecessary?
     // this.cameras.main.ignore([raceTimeText, raceResultsText1, raceResultsText2]);
-
-    raceTimeText.fixedToCamera = true;
 
     // resultsCamera = this.cameras.add();
     // resultsCamera.setBounds(0, 0, bW, bH);
@@ -330,8 +380,12 @@ class GameScene extends Phaser.Class {
     // resultsCamera.followOffset.set(0, 0); 
     // resultsCamera.ignore(backgroundTexture);
 
+
+
     // use default cursor keys
     cursors = this.input.keyboard.createCursorKeys();
+
+
 
     // // this is my exit code. when player has lost or won, transition to next scene
     // this.input.once('pointerdown', function () {
@@ -349,27 +403,11 @@ class GameScene extends Phaser.Class {
 
   }
   update() {
-    /* 
-    // Trying to create a more realistic turn. 
-    let point1 = player1.getTopRight();
-    let point2 = player1.getBottomRight();    
-  
-    tracker1.setPosition(point1.x, point1.y);
-    tracker2.setPosition(point2.x, point2.y);
-  
-    let speed = 0.10;
-    if (cursors.left.isDown) {
-        player1.applyForceFrom({ x: point1.x, y: point1.y }, { x: -speed * Math.cos(player1.body.angle), y: .5 });
-    } else if (cursors.right.isDown) {
-        player1.applyForceFrom({ x: point2.x, y: point2.y }, { x: speed * Math.cos(player1.body.angle), y: .5 });
-    }
-    */
-    //    game.debug.cameraInfo(game.camera, 20, 20);
 
-    let point1 = player1.getTopRight();
-    let point2 = player1.getBottomRight();
-    tracker1.setPosition(point1.x, point1.y);
-    tracker2.setPosition(point2.x, point2.y);
+    // let point1 = player1.getTopRight();
+    // let point2 = player1.getBottomRight();
+    // tracker1.setPosition(point1.x, point1.y);
+    // tracker2.setPosition(point2.x, point2.y);
 
 
     if (cursors.left.isDown) {
@@ -415,20 +453,21 @@ let config = {
   scene: [OpeningScene, GameScene, GameOverScene, StatusScene]
 };
 
-let boardScale = 2;
+let boardScale = 4;
 let player1;
 let waterTexture;
 let plainBuoys = [];
+let numPlainBuoys = 20;
 let powerTargets = [];
+let numPowerTargets = 10;
 let cursors;
 let tideContstraints = [-0.3, 0.3];
 let windConstraints = [-0.3, 0.3];
 let bW = config.width * boardScale;
 let bH = config.height * boardScale;
 let timePenelty = 0; // will add to timePeneklty for each collision
-let raceTimer = 0; // increment by time... 
+let raceTimer = -37; // increment by time... 
 let timerInterval;
-let numPowerTargets = 3;
 let resultsCamera;
 let backgroundTexture;
 let raceResultsText1;
