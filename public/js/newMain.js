@@ -1,113 +1,127 @@
+// class AnyScene extends Phase.Scene {
+//   initialize(){
+//   }
+//   preload() {
+//   }
+//   create() {
+//   }
+//   update() {
+//   }
+// }
 
-let config = {
-  type: Phaser.AUTO,
-  width: 1024,
-  height: 768,
-  boardScale: 2,
-  backgroundColor: '#006994',
-  // parent: 'main',
-  physics: {
-    default: 'matter',
-    matter: {
-      gravity: {
-        x: 0,
-        y: 0
-      },
-      // debug: true,
-      // debugShowBody: true,
-      // debugShowVelocity: true,
-      // debugWireframes: true
-    },
-    arcade: {
-      // debug: true,
-      // gravity: { y: 200 }
-    }
-  },
-  scene: {
-    preload: preload,
-    create: create,
-    update: update
-  },
-};
+class OpeningScene extends Phaser.Class {
 
-let player1;
-let waterTexture;
-let plainBuoys = [];
-let powerTargets = [];
-let cursors;
-let tideContstraints = [-0.3, 0.3];
-let windConstraints = [-0.3, 0.3];
-let bW = config.width * config.boardScale;
-let bH = config.height * config.boardScale;
-let timePenelty = 0; // will add to timePeneklty for each collision
-let raceTimer = 0; // increment by time... 
-let timerInterval;
-let numPowerTargets = 0;
-let resultsCamera;
-let backgroundTexture;
-let raceResultsText1;
-let raceResultsText2;
-
-let game = new Phaser.Game(config);
-
-if (!config.boardScale) {
-  config.boardScale = 1;
-}
-
-let getRand = function (min, max, type) {
-  // type is undefined, float, or int
-  if (type === 'int') {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
-  } else if (type === 'float') {
-
-  } else {
-    return Math.random() * (max - min) + min;
+  constructor() {
+    super('openingScene');
   }
+
+  preload() {
+    this.load.image('waterTexture', 'assets/waterTexture.png');
+  }
+  create() {
+    addBackgroundTiles(this);
+
+    this.input.keyboard.on('keydown', function () {
+      this.scene.switch('gameScene');
+    }, this);
+
+    this.add.text(0, 0, "Opening Scene", {
+      font: '32px Arial',
+      fill: '#ffffff',
+      align: 'center',
+      strokeThickness: 3
+    });
+  }
+  update() {}
 }
 
-// BEB - leave preload, create, and update as fn declarations. 
-function preload() {
-  this.load.image('powerBoat', 'assets/powerBoat.png');
-  this.load.image('waterTexture', 'assets/waterTexture.png');
-  this.load.image('plainBuoy', 'assets/plainBuoy.png');
-  this.load.image('redBuoy', 'assets/redBuoy.png');
-  this.load.image('greenBuoy', 'assets/greenBuoy.png');
+class GameOverScene extends Phaser.Class {
 
+  constructor() {
+    super('gameOverScene');
+  }
+
+  preload() {
+    this.load.image('waterTexture', 'assets/waterTexture.png');
+  }
+  create() {
+    addBackgroundTiles(this);
+
+    this.input.keyboard.on('keydown', function () {
+      this.scene.switch('gameScene');
+    }, this);
+
+    this.add.text(0, 0, "Game Over", {
+      font: '32px Arial',
+      fill: '#ffffff',
+      align: 'center',
+      strokeThickness: 3
+    });
+  }
+  update() {}
 }
 
-function create() {
+class StatusScene extends Phaser.Class {
+  constructor() {
+    super('statusScene');
+  }
+  preload() {}
+  create() {
+    this.add.text(0, 0, "Status Scene Overlay", {
+      font: '32px Arial',
+      fill: '#ffffff',
+      align: 'center',
+      strokeThickness: 3
+    });
+  }
+  update() {}
+}
 
-    // Build the world:
+class GameScene extends Phaser.Class {
+
+  constructor() {
+    super('openingScene');
+    // this.waterTexture;
+    // this.powerBoat;
+    // this.plainBuoy;
+    // this.redBuoy;
+    // this.greenBuoy;
+  }
+
+  preload() {
+    this.load.image('powerBoat', 'assets/powerBoat.png');
+    this.load.image('waterTexture', 'assets/waterTexture.png');
+    this.load.image('plainBuoy', 'assets/plainBuoy.png');
+    this.load.image('redBuoy', 'assets/redBuoy.png');
+    this.load.image('greenBuoy', 'assets/greenBuoy.png');
+  }
+  create() {
+    // Add the status scene to this one. 
+    game.scene.start('statusScene');
+    // this.scene.add('statusScene', StatusScene, true);
+
+    // Build up the scene.:
     let world = this.matter.world;
     world.setBounds(0, 0, bW, bH);
     world.label = 'moBoundary'; // is this working?
+    addBackgroundTiles(this);
 
     // BEB - Sets up random wind and tide as "gravity" on the X,Y access.
-    // Isn't very realistic as both create a vector, but should each have
-    // there own vectors and then have them added together. This is an 
-    // area for improvment for sure. 
+    // Isn't very realistic. Each should be dirction and velocity, weighted
+    // based on the profile of the vessel, and calculated together to generate
+    // and X/Y "gravity.
     let wind = (Math.random() * (windConstraints[1] - windConstraints[0]) + windConstraints[0]);
     let tide = (Math.random() * (tideContstraints[1] - tideContstraints[0]) + tideContstraints[0])
     this.matter.world.setGravity(wind, tide);
     this.matter.world.setGravity(wind, tide);
 
-
-    // Build the background:
-    // https://photonstorm.github.io/phaser3-docs/Phaser.GameObjects.TileSprite.html
-    // waterTexture = this.add.tileSprite(config.width / 2, config.height / 2, config.width, config.height, 'waterTexture');
-
-    for (let x = 0; x <= config.boardScale; x++) {
-      for (let y = 0; y <= config.boardScale; y++) {
-        backgroundTexture = this.add.image(config.width * x, config.height * y, 'waterTexture').setOrigin(0, 0);
-      }
-    }
-
     // Build starting gate with sensor.
     // place to static starting buoys.
     // place a sensor rectangle between them.
     // watch for when the player1 object interacts with the sensor.
+
+
+
     let startingBuoyPort = this.matter.add.sprite((bW / 2) - 100, (bH - 200), 'greenBuoy', null, {
       isStatic: true,
       label: 'moMarkerBuoy',
@@ -151,7 +165,6 @@ function create() {
       label: 'moEndingGateSensor',
       isStatic: true
     });
-
 
 
     // Build player boat.
@@ -275,6 +288,9 @@ function create() {
           console.log('Boat is red.')
         } else if (player1.hullStrengh < 0) {
           console.log('Boat is on fire and game is over.')
+
+          game.scene.start('gameOverScene');
+
         }
         console.log(`moPlayer1 collided with a plain buoy! Hull strength down to ${player1.hullStrengh}`);
 
@@ -290,7 +306,6 @@ function create() {
       strokeThickness: 3
     });
     raceTimeText.fixedToCamera = true;
-    // raceTimeText.cameraOffset.setTo(200, 500);
 
     // raceTimeText = this.add.text(0, 0, 'Hello World', {
     //   fontFamily: '"Roboto Condensed"'
@@ -299,7 +314,6 @@ function create() {
     // raceResultsText1 = this.add.text(0, 32, '0');
     // raceResultsText2 = this.add.text(0, 64, '0');
 
-
     // Setup the camera to follow:
     this.cameras.main.setBounds(0, 0, bW, bH);
     this.cameras.main.startFollow(player1);
@@ -307,7 +321,6 @@ function create() {
     // this.cameras.main.ignore([raceTimeText, raceResultsText1, raceResultsText2]);
 
     raceTimeText.fixedToCamera = true;
-
 
     // resultsCamera = this.cameras.add();
     // resultsCamera.setBounds(0, 0, bW, bH);
@@ -319,48 +332,127 @@ function create() {
 
     // use default cursor keys
     cursors = this.input.keyboard.createCursorKeys();
+
+    // // this is my exit code. when player has lost or won, transition to next scene
+    // this.input.once('pointerdown', function () {
+    //     this.scene.transition({
+    //         target: 'gameOverScene',
+    //         duration: 2000,
+    //         moveBelow: true,
+    //         onUpdate: this.transitionOut,
+    //         data: {
+    //             x: 400,
+    //             y: 300
+    //         }
+    //     });
+    // }, this);
+
+  }
+  update() {
+    /* 
+    // Trying to create a more realistic turn. 
+    let point1 = player1.getTopRight();
+    let point2 = player1.getBottomRight();    
   
+    tracker1.setPosition(point1.x, point1.y);
+    tracker2.setPosition(point2.x, point2.y);
+  
+    let speed = 0.10;
+    if (cursors.left.isDown) {
+        player1.applyForceFrom({ x: point1.x, y: point1.y }, { x: -speed * Math.cos(player1.body.angle), y: .5 });
+    } else if (cursors.right.isDown) {
+        player1.applyForceFrom({ x: point2.x, y: point2.y }, { x: speed * Math.cos(player1.body.angle), y: .5 });
+    }
+    */
+    //    game.debug.cameraInfo(game.camera, 20, 20);
+
+    let point1 = player1.getTopRight();
+    let point2 = player1.getBottomRight();
+    tracker1.setPosition(point1.x, point1.y);
+    tracker2.setPosition(point2.x, point2.y);
+
+
+    if (cursors.left.isDown) {
+      player1.setAngularVelocity(-0.05);
+    } else if (cursors.right.isDown) {
+      player1.setAngularVelocity(0.05);
+    }
+    if (cursors.up.isDown) {
+      player1.inertia = .1;
+      player1.inverseInertia = (1 / player1.inertia);
+      player1.thrust(0.15);
+    }
+
+    powerTargets.forEach(e => {
+      e.thrust(getRand(0, .05));
+    })
+  }
 }
 
-function update() {
-  /* 
-  // Trying to create a more realistic turn. 
-  let point1 = player1.getTopRight();
-  let point2 = player1.getBottomRight();    
+let config = {
+  type: Phaser.AUTO,
+  width: 1024,
+  height: 768,
+  backgroundColor: '#006994',
+  // parent: 'main',
+  physics: {
+    default: 'matter',
+    matter: {
+      gravity: {
+        x: 0,
+        y: 0
+      },
+      // debug: true,
+      // debugShowBody: true,
+      // debugShowVelocity: true,
+      // debugWireframes: true
+    },
+    arcade: {
+      // debug: true,
+      // gravity: { y: 200 }
+    }
+  },
+  scene: [OpeningScene, GameScene, GameOverScene, StatusScene]
+};
 
-  tracker1.setPosition(point1.x, point1.y);
-  tracker2.setPosition(point2.x, point2.y);
+let boardScale = 2;
+let player1;
+let waterTexture;
+let plainBuoys = [];
+let powerTargets = [];
+let cursors;
+let tideContstraints = [-0.3, 0.3];
+let windConstraints = [-0.3, 0.3];
+let bW = config.width * boardScale;
+let bH = config.height * boardScale;
+let timePenelty = 0; // will add to timePeneklty for each collision
+let raceTimer = 0; // increment by time... 
+let timerInterval;
+let numPowerTargets = 3;
+let resultsCamera;
+let backgroundTexture;
+let raceResultsText1;
+let raceResultsText2;
 
-  let speed = 0.10;
-  if (cursors.left.isDown) {
-      player1.applyForceFrom({ x: point1.x, y: point1.y }, { x: -speed * Math.cos(player1.body.angle), y: .5 });
-  } else if (cursors.right.isDown) {
-      player1.applyForceFrom({ x: point2.x, y: point2.y }, { x: speed * Math.cos(player1.body.angle), y: .5 });
+let getRand = function (min, max, type) {
+  // type is undefined, float, or int
+  if (type === 'int') {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
+  } else if (type === 'float') {
+
+  } else {
+    return Math.random() * (max - min) + min;
   }
-  */
-  //    game.debug.cameraInfo(game.camera, 20, 20);
-
-  let point1 = player1.getTopRight();
-  let point2 = player1.getBottomRight();
-  tracker1.setPosition(point1.x, point1.y);
-  tracker2.setPosition(point2.x, point2.y);
-
-
-  if (cursors.left.isDown) {
-    player1.setAngularVelocity(-0.05);
-  } else if (cursors.right.isDown) {
-    player1.setAngularVelocity(0.05);
-  }
-  if (cursors.up.isDown) {
-    player1.inertia = .1;
-    player1.inverseInertia = (1 / player1.inertia);
-    player1.thrust(0.15);
-  }
-
-  powerTargets.forEach(e => {
-    e.thrust(getRand(0, .05));
-  });
-  // this.matter.world.setBounds(player1.x - game.width/2, player1.y - game.height/2, game.width, game.height);
-
 }
 
+let addBackgroundTiles = function (scene) {
+  for (let x = 0; x <= boardScale; x++) {
+    for (let y = 0; y <= boardScale; y++) {
+      backgroundTexture = scene.add.image(config.width * x, config.height * y, 'waterTexture').setOrigin(0, 0);
+    }
+  }
+}
+
+let game = new Phaser.Game(config);

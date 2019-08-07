@@ -70,7 +70,7 @@ let getRand = function (min, max, type) {
 // BEB - leave preload, create, and update as fn declarations. 
 function preload() {
   this.load.image('powerBoat', 'assets/powerBoat.png');
-  this.load.image('waterTexture', 'assets/waterTexture.png');
+  this.load.image('waterTexture', 'assets/water_texture.png');
   this.load.image('plainBuoy', 'assets/plainBuoy.png');
   this.load.image('redBuoy', 'assets/redBuoy.png');
   this.load.image('greenBuoy', 'assets/greenBuoy.png');
@@ -79,8 +79,16 @@ function preload() {
 
 function create() {
 
+  let openScreen = function () {
+    console.log('Open Screen Function');
+
+  }
+
+  let race = function (scene) {
+    console.log(scene);
+
     // Build the world:
-    let world = this.matter.world;
+    let world = scene.matter.world;
     world.setBounds(0, 0, bW, bH);
     world.label = 'moBoundary'; // is this working?
 
@@ -90,17 +98,17 @@ function create() {
     // area for improvment for sure. 
     let wind = (Math.random() * (windConstraints[1] - windConstraints[0]) + windConstraints[0]);
     let tide = (Math.random() * (tideContstraints[1] - tideContstraints[0]) + tideContstraints[0])
-    this.matter.world.setGravity(wind, tide);
-    this.matter.world.setGravity(wind, tide);
+    scene.matter.world.setGravity(wind, tide);
+    scene.matter.world.setGravity(wind, tide);
 
 
     // Build the background:
     // https://photonstorm.github.io/phaser3-docs/Phaser.GameObjects.TileSprite.html
-    // waterTexture = this.add.tileSprite(config.width / 2, config.height / 2, config.width, config.height, 'waterTexture');
+    // waterTexture = scene.add.tileSprite(config.width / 2, config.height / 2, config.width, config.height, 'waterTexture');
 
     for (let x = 0; x <= config.boardScale; x++) {
       for (let y = 0; y <= config.boardScale; y++) {
-        backgroundTexture = this.add.image(config.width * x, config.height * y, 'waterTexture').setOrigin(0, 0);
+        backgroundTexture = scene.add.image(config.width * x, config.height * y, 'waterTexture').setOrigin(0, 0);
       }
     }
 
@@ -108,12 +116,12 @@ function create() {
     // place to static starting buoys.
     // place a sensor rectangle between them.
     // watch for when the player1 object interacts with the sensor.
-    let startingBuoyPort = this.matter.add.sprite((bW / 2) - 100, (bH - 200), 'greenBuoy', null, {
+    let startingBuoyPort = scene.matter.add.sprite((bW / 2) - 100, (bH - 200), 'greenBuoy', null, {
       isStatic: true,
       label: 'moMarkerBuoy',
       damage: 15
     });
-    let startingBuoyStarboard = this.matter.add.sprite((bW / 2) + 100, (bH - 200), 'redBuoy', null, {
+    let startingBuoyStarboard = scene.matter.add.sprite((bW / 2) + 100, (bH - 200), 'redBuoy', null, {
       isStatic: true,
       label: 'moMarkerBuoy',
       damage: 15
@@ -124,18 +132,18 @@ function create() {
     startingBuoyStarboard.flipY = true;
 
     // the x coord here seems to centered in the rect.
-    let startingGateSensor = this.matter.add.rectangle(((bW / 2)), (bH - 200), 200, 10, {
+    let startingGateSensor = scene.matter.add.rectangle(((bW / 2)), (bH - 200), 200, 10, {
       isSensor: true,
       label: 'moStartingGateSensor',
       isStatic: true
     });
 
-    let endingBuoyPort = this.matter.add.sprite((bW / 2) - 100, 200, 'greenBuoy', null, {
+    let endingBuoyPort = scene.matter.add.sprite((bW / 2) - 100, 200, 'greenBuoy', null, {
       isStatic: true,
       label: 'moMarkerBuoy',
       damage: 15
     });
-    let endingBuoyStarboard = this.matter.add.sprite((bW / 2) + 100, 200, 'redBuoy', null, {
+    let endingBuoyStarboard = scene.matter.add.sprite((bW / 2) + 100, 200, 'redBuoy', null, {
       isStatic: true,
       label: 'moMarkerBuoy',
       damage: 15
@@ -146,7 +154,7 @@ function create() {
     endingBuoyStarboard.flipY = true;
 
     // the x coord here seems to centered in the rect.
-    let endingGateSensor = this.matter.add.rectangle(((bW / 2)), 200, 200, 10, {
+    let endingGateSensor = scene.matter.add.rectangle(((bW / 2)), 200, 200, 10, {
       isSensor: true,
       label: 'moEndingGateSensor',
       isStatic: true
@@ -155,7 +163,7 @@ function create() {
 
 
     // Build player boat.
-    player1 = this.matter.add.sprite(bW / 2, bH - 100, 'powerBoat', null, {
+    player1 = scene.matter.add.sprite(bW / 2, bH - 100, 'powerBoat', null, {
       label: 'moPlayer1'
     }); // player1.setFixedRotation(0); // BEB - It's unclear what 
     player1.angle = -90;
@@ -164,8 +172,8 @@ function create() {
     player1.setMass(30);
     player1.hullStrengh = 100;
     // player1.setFixedRotation(0); // BEB - It's unclear what this is doing...
-    tracker1 = this.add.rectangle(0, 0, 4, 4, 0x00ff00);
-    tracker2 = this.add.rectangle(0, 0, 4, 4, 0xff0000);
+    tracker1 = scene.add.rectangle(0, 0, 4, 4, 0x00ff00);
+    tracker2 = scene.add.rectangle(0, 0, 4, 4, 0xff0000);
 
 
     // Build sailTargets
@@ -179,7 +187,7 @@ function create() {
     // Build staticTargets or other targets.
     let plainBuoys = [];
     for (let i = 0; i < 5; i++) {
-      plainBuoys[i] = this.matter.add.sprite(getRand(0, config.width * 2, 'int'), getRand(0, config.height * 2, 'int'), 'plainBuoy', null, {
+      plainBuoys[i] = scene.matter.add.sprite(getRand(0, config.width * 2, 'int'), getRand(0, config.height * 2, 'int'), 'plainBuoy', null, {
         isStatic: true,
         label: 'moPlainBuoy',
         damage: 20
@@ -193,7 +201,7 @@ function create() {
 
     // Build powerTargets
     for (let i = 0; i < numPowerTargets; i++) {
-      powerTargets[i] = this.matter.add.image(getRand(0, config.width, 'int'), getRand(0, config.height, 'int'), 'powerBoat', null, {
+      powerTargets[i] = scene.matter.add.image(getRand(0, config.width, 'int'), getRand(0, config.height, 'int'), 'powerBoat', null, {
         // isStatic: true,
         damage: 30
       });
@@ -204,7 +212,7 @@ function create() {
     }
 
     // Manage all collisions:
-    this.matter.world.on('collisionstart', function (event) {
+    scene.matter.world.on('collisionstart', function (event) {
       let collPairs = event.pairs;
 
       // console.log(`${collPairs}`);
@@ -283,7 +291,7 @@ function create() {
 
 
 
-    raceTimeText = this.add.text(200, 500, "this text is fixed to the camera", {
+    raceTimeText = scene.add.text(200, 500, "this text is fixed to the camera", {
       font: '32px Arial',
       fill: '#ffffff',
       align: 'center',
@@ -292,24 +300,24 @@ function create() {
     raceTimeText.fixedToCamera = true;
     // raceTimeText.cameraOffset.setTo(200, 500);
 
-    // raceTimeText = this.add.text(0, 0, 'Hello World', {
+    // raceTimeText = scene.add.text(0, 0, 'Hello World', {
     //   fontFamily: '"Roboto Condensed"'
     // });
 
-    // raceResultsText1 = this.add.text(0, 32, '0');
-    // raceResultsText2 = this.add.text(0, 64, '0');
+    // raceResultsText1 = scene.add.text(0, 32, '0');
+    // raceResultsText2 = scene.add.text(0, 64, '0');
 
 
     // Setup the camera to follow:
-    this.cameras.main.setBounds(0, 0, bW, bH);
-    this.cameras.main.startFollow(player1);
-    this.cameras.main.followOffset.set(0, 0); // unnecessary?
-    // this.cameras.main.ignore([raceTimeText, raceResultsText1, raceResultsText2]);
+    scene.cameras.main.setBounds(0, 0, bW, bH);
+    scene.cameras.main.startFollow(player1);
+    scene.cameras.main.followOffset.set(0, 0); // unnecessary?
+    // scene.cameras.main.ignore([raceTimeText, raceResultsText1, raceResultsText2]);
 
     raceTimeText.fixedToCamera = true;
 
 
-    // resultsCamera = this.cameras.add();
+    // resultsCamera = scene.cameras.add();
     // resultsCamera.setBounds(0, 0, bW, bH);
     // resultsCamera.setAlpha(.8);
     // resultsCamera.startFollow(player1);
@@ -318,8 +326,18 @@ function create() {
     // resultsCamera.ignore(backgroundTexture);
 
     // use default cursor keys
-    cursors = this.input.keyboard.createCursorKeys();
+    cursors = scene.input.keyboard.createCursorKeys();
   
+  }
+
+  let endScreen = function () {
+
+  }
+
+  // openScreen();
+  race(this);
+
+
 }
 
 function update() {
