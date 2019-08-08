@@ -76,7 +76,7 @@ class StatusScene extends Phaser.Scene {
           raceTimeText.y = 0;
           raceTimeText.setText(`Time: ${-raceTimer} \nHull strength: ${player1.hullStrengh}`);
         }
-      }, 1000);
+      }, 700);
     }
   }
 }
@@ -201,7 +201,7 @@ class GameScene extends Phaser.Scene {
     };
 
     let placeEndingGate = () => {
-      let endingBuoyPort = this.matter.add.sprite(getRand(0, (bW - 100), 'int') + 5, 200, 'greenBuoy', null, {
+      let endingBuoyPort = this.matter.add.sprite(getRand(0, (bW - 150), 'int') + 5, 200, 'greenBuoy', null, {
         isStatic: true,
         label: 'moMarkerBuoy',
         damage: 15
@@ -248,11 +248,11 @@ class GameScene extends Phaser.Scene {
 
 
     // this.matter.add.image(getRand(0, bW, 'int'), getRand(0, bH, 'int'), 'shark', null, {
-    this.matter.add.imageStack('shark', null, getRand(0, bW, 'int'), getRand(0, bH, 'int'), 1, 1, 0, 0, {
+    this.matter.add.imageStack('shark', null, getRand(0, bW, 'int'), getRand(0, bH, 'int'), 1, 2, 0, 0, {
       damage: 1000,
       label: 'moPowerTarget',
       ignorePointer: true,
-      mass: 0.5,
+      mass: 0.45,
       allowGravity: false
     });
 
@@ -429,7 +429,7 @@ class GameScene extends Phaser.Scene {
     if (cursors.up.isDown) {
       player1.inertia = 100;
       player1.inverseInertia = (1 / player1.inertia);
-      player1.thrust(0.06);
+      player1.thrust(0.075);
 
     }
 
@@ -465,15 +465,15 @@ let backgroundTexture;
 let explosion;
 let resultsCamera;
 
-const boardScale = 2;
+const boardScale = 3;
 const bW = config.width * boardScale;
 const bH = config.height * boardScale;
 
 let plainBuoys = [];
-const numPlainBuoys = 15;
+const numPlainBuoys = 20;
 
 let powerTargets = [];
-const numPowerTargets = 5;
+const numPowerTargets = 10;
 
 let cursors;
 
