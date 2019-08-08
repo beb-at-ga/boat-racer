@@ -12,6 +12,7 @@ Press 'S' to Start.
 - Audacity
 
 
+# Spec
 - ~~Game is playable~~
 - ~~Game is 2-player (or AI or PVE)~~ PVE
 - ~~Draw detected (if applicable)~~   
