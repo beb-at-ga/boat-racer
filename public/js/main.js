@@ -1,38 +1,95 @@
-// class AnyScene extends Phase.Scene {
-//   initialize(){
-//   }
-//   preload() {
-//   }
-//   create() {
-//   }
-//   update() {
-//   }
-// }
-
 class OpeningScene extends Phaser.Scene {
 
   constructor() {
     super('openingScene');
   }
-  initialize() {}
+
   preload() {
     this.load.image('waterTexture', 'assets/waterTexture.png');
+    this.load.image('arrowKeys', 'assets/arrowKeys.png');
   }
+
   create() {
     addBackgroundTiles(this);
-    this.input.keyboard.on('keydown', function () {
+
+    this.input.keyboard.addKey('s').on('up', function () {
       this.scene.switch('gameScene');
     }, this);
 
-    this.add.text(0, 0, "Opening Scene", {
-      font: '32px Arial',
+    let introText = `Your mission is simple. Race between the marker buoys before\nthe clock runs out and don't hit anything! \nGreen on the left and red on the right.\n\nOh, and don't jump the gun on \nthe starting gate. You WILL be disqulaified.`;
+
+    this.add.text(35, 200, introText, {
+      font: '25px',
       fill: '#ffffff',
-      align: 'center',
-      strokeThickness: 3
+      align: 'left',
+      fontFamily: '"Roboto Condensed"',
+      strokeThickness: 2
     });
+
+    let controlText = `The arrow keys control your boat (left, up, right).`
+    this.add.text(35, 450, controlText, {
+      font: '25px',
+      fill: '#ffffff',
+      align: 'left',
+      fontFamily: '"Roboto Condensed"',
+      strokeThickness: 2
+    });
+
+    this.add.image(830, 425, 'arrowKeys').setOrigin(0, 0);
+
+    this.add.text(35, 530, "Press 'S' to start.", {
+      font: '25px',
+      fill: '#ffffff',
+      justify: 'left',
+      fontFamily: '"Roboto Condensed"',
+      strokeThickness: 2
+    });
+
   }
   update() {}
 }
+
+
+class StatusScene extends Phaser.Scene {
+  constructor() {
+    super('statusScene');
+  }
+  preload() {}
+  create() {
+
+    let raceTimeText = this.add.text(450, 350, null, {
+      font: '25px',
+      fill: '#ffffff',
+      align: 'left',
+      fontFamily: '"Roboto Condensed"',
+      strokeThickness: 2
+    });
+
+    if (!timerInterval) {
+
+      timerInterval = setInterval(function () {
+        raceTimer += 1;
+        switch (raceTimer) {
+          case -34:
+            raceTimeText.setText('Ready!');
+            break;
+          case -32:
+            raceTimeText.setText('Set!');
+            break;
+          case -30:
+            raceTimeText.setText('GO!');
+            break;
+        }
+        if (raceTimer <= 0 && raceTimer >= -29) {
+          raceTimeText.x = 0;
+          raceTimeText.y = 0;
+          raceTimeText.setText(`Time: ${-raceTimer} \nHull strength: ${player1.hullStrengh}`);
+        }
+      }, 500);
+    }
+  }
+}
+
 
 class GameOverScene extends Phaser.Scene {
 
@@ -42,76 +99,69 @@ class GameOverScene extends Phaser.Scene {
 
   preload() {
     this.load.image('waterTexture', 'assets/waterTexture.png');
+    this.load.image('gameOver', 'assets/gameOver.png');
+    this.load.audio('woohoo', 'assets/woohoo.mp3');
+    this.load.audio('doh', 'assets/doh.mp3');
   }
   create() {
-    addBackgroundTiles(this);
 
-    this.input.keyboard.on('keydown', function () {
-      this.scene.switch('gameScene');
-    }, this);
+    player1.visible = false;
+    game.scene.stop('statusScene');
 
-    this.add.text(0, 0, "Game Over", {
-      font: '32px Arial',
-      fill: '#ffffff',
-      align: 'center',
-      strokeThickness: 3
-    });
+    setTimeout(() => {
+
+      addBackgroundTiles(this);
+
+      this.input.keyboard.addKey('s').on('up', function () {
+        // this bigest hack of all :( 
+        location.reload();
+
+        // // These restarts aren't working...
+        // this.scene.get('statusScene').scene.restart();
+        // this.scene.get('gameScene').scene.restart();
+        // this.scene.switch('gameScene');
+      }, this);
+
+      this.add.image(212, 10, 'gameOver').setOrigin(0, 0);
+
+      let winnerText;
+      if (player1.hullStrengh < 0) {
+        this.sound.add('doh').play();
+        winnerText = 'Forget your glasses today? Avoid all the things!';
+      } else if (raceTimer >= 0) {
+        this.sound.add('doh').play();
+        winnerText = `I could have swam this course faster. Get a move on!!`
+      } else {
+        this.sound.add('woohoo').play();
+        winnerText = `Woohoo! You beat the clock without killing youself! \nHave a donut.`
+      }
+
+      this.add.text(30, 375, winnerText, {
+        font: '30px',
+        fill: '#ffffff',
+        align: 'left',
+        fontFamily: '"Roboto Condensed"',
+        strokeThickness: 2
+      });
+
+      this.add.text(30, 530, "Press 'S' to start again.", {
+        font: '25px',
+        fill: '#ffffff',
+        align: 'left',
+        fontFamily: '"Roboto Condensed"',
+        strokeThickness: 2
+      });
+
+    }, 1000);
+
   }
-  update() {}
 }
 
-class StatusScene extends Phaser.Scene {
-  constructor() {
-    super('statusScene');
-  }
-  preload() {}
-  create() {
-
-    let raceTimeText = this.add.text(0, 0, null, {
-      font: '32px Arial',
-      fill: '#ffffff',
-      align: 'center',
-      fontFamily: '"Roboto Condensed"',
-      strokeThickness: 2
-    });
-    raceTimeText.fixedToCamera = true;
-
-
-    if (!timerInterval) {
-      timerInterval = setInterval(function () {
-        raceTimer += 1;
-        switch (raceTimer) {
-          case -36:
-            raceTimeText.setText('Ready!');
-            break;
-          case -33:
-            raceTimeText.setText('Set!');
-            break;
-          case -30:
-            raceTimeText.setText('GO!');
-            break;
-        }
-
-        if (raceTimer < 0 && raceTimer >= -29) {
-          raceTimeText.setText(`${-raceTimer}`);
-        }
-      }, 1000);
-    }
-
-
-  }
-  update() {}
-}
 
 class GameScene extends Phaser.Scene {
 
   constructor() {
     super('gameScene');
-    // this.waterTexture;
-    // this.powerBoat;
-    // this.plainBuoy;
-    // this.redBuoy;
-    // this.greenBuoy;
   }
 
   preload() {
@@ -120,56 +170,29 @@ class GameScene extends Phaser.Scene {
     this.load.image('plainBuoy', 'assets/plainBuoy.png');
     this.load.image('redBuoy', 'assets/redBuoy.png');
     this.load.image('greenBuoy', 'assets/greenBuoy.png');
-    this.load.spritesheet('kaboom', 'assets/explode.png', {
+    this.load.spritesheet('explodeSprite', 'assets/explode.png', {
       frameWidth: 128,
       frameHeight: 128
     });
+    this.load.image('gameOver', 'assets/gameOver.png');
+    this.load.audio('explosionAudio', 'assets/explosion.mp3');
+    this.load.image('shark', 'assets/shark.png');
 
   }
   create() {
-
-    let explosionAudio = new Audio('assets/explosion.mp3');
-
-
-    this.anims.create({
-      key: 'explode',
-      frames: this.anims.generateFrameNumbers('kaboom', {
-        start: 0,
-        end: 15
-      }),
-      frameRate: 16,
-      repeat: 0,
-      hideOnComplete: true
-    });
-
-    let explosions = this.add.group({
-      defaultKey: 'kaboom',
-      maxSize: 30
-    });
-
-    // Add the status scene to this one. 
-    game.scene.start('statusScene');
-    // this.scene.add('statusScene', StatusScene, true);
-
-    // Build up the scene.:
+    // Build up the scene.
     let world = this.matter.world;
     world.setBounds(0, 0, bW, bH);
-    world.label = 'moBoundary'; // is this working?
+
     addBackgroundTiles(this);
 
-    // BEB - Sets up random wind and tide as "gravity" on the X,Y access.
-    // Isn't very realistic. Each should be dirction and velocity, weighted
-    // based on the profile of the vessel, and calculated together to generate
-    // and X/Y "gravity.
+    this.scene.get('statusScene').scene.start();
+
+    // Set "wind and tide"
     let wind = (Math.random() * (windConstraints[1] - windConstraints[0]) + windConstraints[0]);
     let tide = (Math.random() * (tideContstraints[1] - tideContstraints[0]) + tideContstraints[0])
-    this.matter.world.setGravity(wind, tide);
-    this.matter.world.setGravity(wind, tide);
-
-    // Build starting gate with sensor.
-    // place to static starting buoys.
-    // place a sensor rectangle between them.
-    // watch for when the player1 object interacts with the sensor.
+    world.setGravity(wind, tide);
+    world.setGravity(wind, tide);
 
     let startingBuoyPort = this.matter.add.sprite((bW / 2) - 100, (bH - 200), 'greenBuoy', null, {
       isStatic: true,
@@ -216,9 +239,28 @@ class GameScene extends Phaser.Scene {
     });
 
 
+    // this.matter.add.image(getRand(0, bW, 'int'), getRand(0, bH, 'int'), 'shark', null, {
+    this.matter.add.imageStack('shark', null, getRand(0, bW, 'int'), getRand(0, bH, 'int'), 1, 1, 0, 0, {
+      damage: 1000,
+      label: 'moPowerTarget',
+      ignorePointer: true,
+      mass: 0.5,
+      allowGravity: false
+    });
+
     // Build player boat.
     player1 = this.matter.add.sprite(bW / 2, bH - 100, 'powerBoat', null, {
-      label: 'moPlayer1'
+      label: 'moPlayer1',
+      plugin: {
+        attractors: [
+          function (bodyA, bodyB) {
+            return {
+              x: (bodyA.position.x - bodyB.position.x) * 0.0000001,
+              y: (bodyA.position.y - bodyB.position.y) * 0.0000001
+            };
+          }
+        ]
+      }
     }); // player1.setFixedRotation(0); // BEB - It's unclear what 
     player1.angle = -90;
     player1.label = 'goPlayer1';
@@ -226,14 +268,6 @@ class GameScene extends Phaser.Scene {
     player1.setMass(30);
     player1.hullStrengh = 100;
     player1.setAllowDrag = true;
-    // player1.setDrag(100, 0);
-    // this.body.setFriction(0.7, 0)
-
-
-
-    // player1.setFixedRotation(0); // BEB - It's unclear what this is doing...
-    let tracker1 = this.add.rectangle(0, 0, 4, 4, 0x00ff00);
-    let tracker2 = this.add.rectangle(0, 0, 4, 4, 0xff0000);
 
 
     // Build sailTargets
@@ -271,44 +305,54 @@ class GameScene extends Phaser.Scene {
     }
 
     // Manage all collisions:
-    this.matter.world.on('collisionstart', function (event) {
+    world.on('collisionstart', function (event) {
       let collPairs = event.pairs;
 
-      // console.log(`${collPairs}`);
-
       for (let i = 0; i < collPairs.length; i++) {
-        let pair = collPairs[i];
 
+        let pair = collPairs[i];
         let bALabel = pair.bodyA.label;
         let bBLabel = pair.bodyB.label;
 
         switch (true) {
           // Player collides with starting gate. Start the timer (should determine directionality)
           case (pair.isSensor && (bALabel === 'moPlayer1' || bBLabel === 'moPlayer1') && (bALabel === 'moStartingGateSensor' || bBLabel === 'moStartingGateSensor')):
-            console.log('moPlayer1 crossed starting gate.');
+
+            if (raceTimer < -30) {
+              console.log('you jumped the gun');
+            }
+
             break;
+
             // Player collides with ending gate. Stop the timer (should determine directionality)
           case (pair.isSensor && (bALabel === 'moPlayer1' || bBLabel === 'moPlayer1') && (bALabel === 'moEndingGateSensor' || bBLabel === 'moStartingGateSensor')):
             clearInterval(timerInterval);
-            // if raceTimer < 0, we have a winner!
-
-            game.scene.stop('statusScene');
+            winner = true;
             game.scene.start('gameOverScene');
             break;
             // plain buoy
+
           case ((bALabel === 'moPlayer1' || bALabel === 'moPlainBuoy') && (bBLabel === 'moPlayer1' || bBLabel === 'moPlainBuoy')):
             player1.hullStrengh -= collPairs[i].bodyB.damage;
             break;
             // marker buoy
+
           case ((bALabel === 'moPlayer1' || bALabel === 'moMarkerBuoy') && (bBLabel === 'moPlayer1' || bBLabel === 'moMarkerBuoy')):
             player1.hullStrengh -= collPairs[i].bodyA.damage;
-            // console.log(pair);
             break;
-          case ((bALabel === 'moPlayer1' || bALabel === 'moPlayer1') && (bBLabel === 'moPowerTarget' || bBLabel === 'moPowerTarget')):
+            // power targets
+
+
+          case ((bALabel === 'moPlayer1' || bALabel === 'moPowerTarget') && (bBLabel === 'moPowerTarget' || bBLabel === 'moPlayer1')):
             console.log(pair);
-            player1.hullStrengh -= collPairs[i].bodyB.damage;
+            if (bALabel === 'moPlayer1') {
+              player1.hullStrengh -= collPairs[i].bodyB.damage;
+            } else if (bBLabel === 'moPlayer1') {
+              player1.hullStrengh -= collPairs[i].bodyA.damage;
+            }
             break;
-            // other vessel
+
+            // other vessels
           default:
             // console.log(`${pair.bodyA.label} collided with ${pair.bodyB.label}`);
             if (pair.bodyA.gameObject) {
@@ -328,41 +372,14 @@ class GameScene extends Phaser.Scene {
               //     // world.remove();
               //   }
               // }
-
             }
             break;
         }
-
-        if (player1.hullStrengh <= 50 && player1.hullStrengh > 20) {
-          console.log('Boat is yellow.')
-        } else if (player1.hullStrengh <= 20 && player1.hullStrengh >= 0) {
-          console.log('Boat is red.')
-        } else if (player1.hullStrengh < 0) {
-          console.log('Boat is on fire and game is over.')
-          explosionAudio.play();
-          // Get the first explosion, and activate it.
-          let explosion = explosions.get().setActive(true);
-
-          explosion.setOrigin(0.5, 0.5);
-          explosion.x = player1.x;
-          explosion.y = player1.y;
-          explosion.play('explode');
-
-          explosion.on('animationcomplete', function () {
-            explosion.destroy()
-
-            setTimeout(function () {
-              game.scene.start('gameOverScene');
-              game.scene.stop('statusScene');
-            }, 3000);
-
-          });
-
-
-        }
-
       }
     });
+
+
+
 
 
 
@@ -370,21 +387,8 @@ class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, bW, bH);
     this.cameras.main.startFollow(player1);
     this.cameras.main.followOffset.set(0, 0); // unnecessary?
-    // this.cameras.main.ignore([raceTimeText, raceResultsText1, raceResultsText2]);
 
-    // resultsCamera = this.cameras.add();
-    // resultsCamera.setBounds(0, 0, bW, bH);
-    // resultsCamera.setAlpha(.8);
-    // resultsCamera.startFollow(player1);
-    // resultsCamera.setBackgroundColor('#FF0000');
-    // resultsCamera.followOffset.set(0, 0); 
-    // resultsCamera.ignore(backgroundTexture);
-
-
-
-    // use default cursor keys
     cursors = this.input.keyboard.createCursorKeys();
-
 
 
     // // this is my exit code. when player has lost or won, transition to next scene
@@ -410,15 +414,56 @@ class GameScene extends Phaser.Scene {
     // tracker2.setPosition(point2.x, point2.y);
 
 
+    if (player1.hullStrengh <= 50 && player1.hullStrengh > 20) {
+      // console.log('Boat is yellow.')
+    } else if (player1.hullStrengh <= 20 && player1.hullStrengh >= 0) {
+      // console.log('Boat is red.')
+    } else if (player1.hullStrengh < 0 || raceTimer >= 0) {
+      // console.log('Boat is on fire and game is over.')
+      clearInterval(timerInterval);
+
+      this.anims.create({
+        key: 'explode',
+        frames: this.anims.generateFrameNumbers('explodeSprite', {
+          start: 0,
+          end: 15
+        }),
+        frameRate: 12,
+        repeat: 2,
+        hideOnComplete: true
+      });
+
+      let explosions = this.add.group({
+        defaultKey: 'explodeSprite',
+        maxSize: 30
+      });
+
+      if (!explosion) {
+        let explosionAudio = this.sound.add('explosionAudio');
+        explosionAudio.play();
+        explosion = explosions.get().setActive(true);
+        explosion.setOrigin(0.5, 0.5);
+        explosion.x = player1.x;
+        explosion.y = player1.y;
+        explosion.play('explode');
+
+        explosion.on('animationcomplete', function () {
+          game.scene.start('gameOverScene');
+        });
+      }
+    }
+
+
+
     if (cursors.left.isDown) {
       player1.setAngularVelocity(-0.05);
     } else if (cursors.right.isDown) {
       player1.setAngularVelocity(0.05);
     }
     if (cursors.up.isDown) {
-      player1.inertia = .1;
+      player1.inertia = 100;
       player1.inverseInertia = (1 / player1.inertia);
-      player1.thrust(0.15);
+      player1.thrust(0.06);
     }
 
     powerTargets.forEach(e => {
@@ -437,41 +482,47 @@ let config = {
     default: 'matter',
     matter: {
       gravity: {
-        x: 0,
-        y: 0
+        scale: 0
+      },
+      plugins: {
+        attractors: true
       },
       // debug: true,
       // debugShowBody: true,
       // debugShowVelocity: true,
       // debugWireframes: true
     },
-    arcade: {
-      // debug: true,
-      // gravity: { y: 200 }
-    }
+    // arcade: {
+    //   // debug: true,
+    //   // gravity: { y: 200 }
+    // }
   },
   scene: [OpeningScene, GameScene, GameOverScene, StatusScene]
 };
 
-let boardScale = 4;
+
 let player1;
 let waterTexture;
+let boardScale = 2;
 let plainBuoys = [];
-let numPlainBuoys = 20;
+let numPlainBuoys = 2;
 let powerTargets = [];
-let numPowerTargets = 10;
+let numPowerTargets = 1;
 let cursors;
 let tideContstraints = [-0.3, 0.3];
 let windConstraints = [-0.3, 0.3];
 let bW = config.width * boardScale;
 let bH = config.height * boardScale;
 let timePenelty = 0; // will add to timePeneklty for each collision
-let raceTimer = -37; // increment by time... 
+let raceTimerStart = -35; //increment by time... 
+let raceTimer = raceTimerStart;
 let timerInterval;
 let resultsCamera;
 let backgroundTexture;
 let raceResultsText1;
 let raceResultsText2;
+let explosion;
+let winner = false;
 
 let getRand = function (min, max, type) {
   // type is undefined, float, or int
