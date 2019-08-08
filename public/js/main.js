@@ -16,39 +16,30 @@ class OpeningScene extends Phaser.Scene {
       this.scene.switch('gameScene');
     }, this);
 
-    let introText = `Your mission is simple. Race between the marker buoys before\nthe clock runs out and don't hit anything! \nGreen on the left and red on the right.\n\nOh, and don't jump the gun on \nthe starting gate. You WILL be disqulaified.`;
-
-    this.add.text(35, 200, introText, {
-      font: '25px',
-      fill: '#ffffff',
-      align: 'left',
-      fontFamily: '"Roboto Condensed"',
-      strokeThickness: 2
+    let header = `Boat Racer!`;
+    this.add.text(380, 20, header, {
+        font: '45px',
+        fill: '#ffffff',
+        align: 'left',
+        fontFamily: '"Roboto Condensed"',
+        strokeThickness: 2
     });
+
+
+
+    let introText = `Your mission is simple. Race between the marker buoys before\nthe clock runs out and don't hit anything! \nGreen on the left and red on the right.\n\nOh, and don't jump the gun on \nthe starting gate. You WILL be disqulaified.`;
+    this.add.text(35, 200, introText, textDefaults);
 
     let controlText = `The arrow keys control your boat (left, up, right).`
-    this.add.text(35, 450, controlText, {
-      font: '25px',
-      fill: '#ffffff',
-      align: 'left',
-      fontFamily: '"Roboto Condensed"',
-      strokeThickness: 2
-    });
+    this.add.text(35, 450, controlText, textDefaults);
 
     this.add.image(830, 425, 'arrowKeys').setOrigin(0, 0);
 
-    this.add.text(35, 530, "Press 'S' to start.", {
-      font: '25px',
-      fill: '#ffffff',
-      justify: 'left',
-      fontFamily: '"Roboto Condensed"',
-      strokeThickness: 2
-    });
+    this.add.text(35, 530, "Press 'S' to start.", textDefaults);
 
   }
   update() {}
 }
-
 
 class StatusScene extends Phaser.Scene {
   constructor() {
@@ -57,13 +48,7 @@ class StatusScene extends Phaser.Scene {
   preload() {}
   create() {
 
-    let raceTimeText = this.add.text(450, 350, null, {
-      font: '25px',
-      fill: '#ffffff',
-      align: 'left',
-      fontFamily: '"Roboto Condensed"',
-      strokeThickness: 2
-    });
+    let raceTimeText = this.add.text(450, 350, null, textDefaults);
 
     if (!timerInterval) {
 
@@ -90,7 +75,6 @@ class StatusScene extends Phaser.Scene {
   }
 }
 
-
 class GameOverScene extends Phaser.Scene {
 
   constructor() {
@@ -102,11 +86,13 @@ class GameOverScene extends Phaser.Scene {
     this.load.image('gameOver', 'assets/gameOver.png');
     this.load.audio('woohoo', 'assets/woohoo.mp3');
     this.load.audio('doh', 'assets/doh.mp3');
+    this.load.audio('fatality', 'assets/fatality.mp3');
   }
   create() {
 
     player1.visible = false;
     game.scene.stop('statusScene');
+    clearInterval(timerInterval);
 
     setTimeout(() => {
 
@@ -125,38 +111,39 @@ class GameOverScene extends Phaser.Scene {
       this.add.image(212, 10, 'gameOver').setOrigin(0, 0);
 
       let winnerText;
-      if (player1.hullStrengh < 0) {
-        this.sound.add('doh').play();
-        winnerText = 'Forget your glasses today? Avoid all the things!';
-      } else if (raceTimer >= 0) {
-        this.sound.add('doh').play();
-        winnerText = `I could have swam this course faster. Get a move on!!`
-      } else {
-        this.sound.add('woohoo').play();
-        winnerText = `Woohoo! You beat the clock without killing youself! \nHave a donut.`
+      switch (true) {
+        case (player1.hullStrengh <= 0):
+          this.sound.add('fatality').play();
+          winnerText = 'Forget your glasses today? Avoid all the things!';
+          break;
+        case (raceTimer >= 0):
+          this.sound.add('fatality').play();
+          winnerText = `I could have swam this course faster. Get a move on!!`
+          break;
+        case (startGatePassage === false && winner === false):
+          this.sound.add('doh').play();
+          winnerText = `Disqualified! Don't jump the gun.`
+          break;
+        case (startGatePassage === false && winner === true):
+          this.sound.add('doh').play();
+          winnerText = `Disqualified! You didn't pass through the starting gate!`
+          break;
+        default:
+          this.sound.add('woohoo').play();
+          winnerText = `Woohoo! You beat the clock and didn't get yourself killed! \nYou rock!`
       }
 
-      this.add.text(30, 375, winnerText, {
-        font: '30px',
-        fill: '#ffffff',
-        align: 'left',
-        fontFamily: '"Roboto Condensed"',
-        strokeThickness: 2
-      });
 
-      this.add.text(30, 530, "Press 'S' to start again.", {
-        font: '25px',
-        fill: '#ffffff',
-        align: 'left',
-        fontFamily: '"Roboto Condensed"',
-        strokeThickness: 2
-      });
+      this.add.text(30, 375, winnerText, textDefaults);
+
+      // font('45px');
+
+      this.add.text(30, 530, "Press 'S' to start again.", textDefaults);
 
     }, 1000);
 
   }
 }
-
 
 class GameScene extends Phaser.Scene {
 
@@ -180,9 +167,64 @@ class GameScene extends Phaser.Scene {
 
   }
   create() {
+
+    let placeStartingGate = () => {
+      // Set the starting marker buoys. Note coordinates.
+      let startingBuoyPort = this.matter.add.sprite((bW / 2) - 100, (bH - 200), 'greenBuoy', null, {
+        isStatic: true,
+        label: 'moMarkerBuoy',
+        damage: 15
+      });
+      startingBuoyPort.flipX = true;
+      startingBuoyPort.flipY = true;
+      
+      let startingBuoyStarboard = this.matter.add.sprite((bW / 2) + 100, (bH - 200), 'redBuoy', null, {
+        isStatic: true,
+        label: 'moMarkerBuoy',
+        damage: 15
+      });
+      startingBuoyStarboard.flipX = true;
+      startingBuoyStarboard.flipY = true;
+  
+      // the x coord here seems to centered in the rect.
+      let startingGateSensor = this.matter.add.rectangle(((bW / 2)), (bH - 200), 200, 10, {
+        isSensor: true,
+        label: 'moStartingGateSensor',
+        isStatic: true
+      });
+    };
+
+    let placeEndingGate = () => {
+      let endingBuoyPort = this.matter.add.sprite(getRand(0, (bW - 100), 'int') + 5, 200, 'greenBuoy', null, {
+        isStatic: true,
+        label: 'moMarkerBuoy',
+        damage: 15
+      });
+      endingBuoyPort.flipX = true;
+      endingBuoyPort.flipY = true;
+  
+      let endingBuoyStarboard = this.matter.add.sprite(endingBuoyPort.x + 200, 200, 'redBuoy', null, {
+        isStatic: true,
+        label: 'moMarkerBuoy',
+        damage: 15
+      });
+      endingBuoyStarboard.flipX = true;
+      endingBuoyStarboard.flipY = true;
+  
+      // the x coord here seems to centered in the rect.
+      // let endingGateSensor = this.matter.add.rectangle(((bW / 2)), 200, 200, 10, {
+      let endingGateSensor = this.matter.add.rectangle(endingBuoyPort.x, 200, 200, 10, {
+        isSensor: true,
+        label: 'moEndingGateSensor',
+        isStatic: true
+      });
+  
+    }
+
+
     // Build up the scene.
     let world = this.matter.world;
-    world.setBounds(0, 0, bW, bH);
+     world.setBounds(0, 0, bW, bH);
 
     addBackgroundTiles(this);
 
@@ -192,51 +234,11 @@ class GameScene extends Phaser.Scene {
     let wind = (Math.random() * (windConstraints[1] - windConstraints[0]) + windConstraints[0]);
     let tide = (Math.random() * (tideContstraints[1] - tideContstraints[0]) + tideContstraints[0])
     world.setGravity(wind, tide);
-    world.setGravity(wind, tide);
 
-    let startingBuoyPort = this.matter.add.sprite((bW / 2) - 100, (bH - 200), 'greenBuoy', null, {
-      isStatic: true,
-      label: 'moMarkerBuoy',
-      damage: 15
-    });
-    let startingBuoyStarboard = this.matter.add.sprite((bW / 2) + 100, (bH - 200), 'redBuoy', null, {
-      isStatic: true,
-      label: 'moMarkerBuoy',
-      damage: 15
-    });
-    startingBuoyPort.flipX = true;
-    startingBuoyPort.flipY = true;
-    startingBuoyStarboard.flipX = true;
-    startingBuoyStarboard.flipY = true;
 
-    // the x coord here seems to centered in the rect.
-    let startingGateSensor = this.matter.add.rectangle(((bW / 2)), (bH - 200), 200, 10, {
-      isSensor: true,
-      label: 'moStartingGateSensor',
-      isStatic: true
-    });
+    placeStartingGate();
+    placeEndingGate();
 
-    let endingBuoyPort = this.matter.add.sprite((bW / 2) - 100, 200, 'greenBuoy', null, {
-      isStatic: true,
-      label: 'moMarkerBuoy',
-      damage: 15
-    });
-    let endingBuoyStarboard = this.matter.add.sprite((bW / 2) + 100, 200, 'redBuoy', null, {
-      isStatic: true,
-      label: 'moMarkerBuoy',
-      damage: 15
-    });
-    endingBuoyPort.flipX = true;
-    endingBuoyPort.flipY = true;
-    endingBuoyStarboard.flipX = true;
-    endingBuoyStarboard.flipY = true;
-
-    // the x coord here seems to centered in the rect.
-    let endingGateSensor = this.matter.add.rectangle(((bW / 2)), 200, 200, 10, {
-      isSensor: true,
-      label: 'moEndingGateSensor',
-      isStatic: true
-    });
 
 
     // this.matter.add.image(getRand(0, bW, 'int'), getRand(0, bH, 'int'), 'shark', null, {
@@ -288,7 +290,6 @@ class GameScene extends Phaser.Scene {
       });
       plainBuoys[i].flipX = true;
       plainBuoys[i].flipY = true;
-      // interesting. this is a gameobject, where they preceeding lable is a matter body label...
       plainBuoys[i].label = 'goPlayBuoy' + i;
     }
 
@@ -319,19 +320,27 @@ class GameScene extends Phaser.Scene {
           case (pair.isSensor && (bALabel === 'moPlayer1' || bBLabel === 'moPlayer1') && (bALabel === 'moStartingGateSensor' || bBLabel === 'moStartingGateSensor')):
 
             if (raceTimer < -30) {
-              console.log('you jumped the gun');
+              game.scene.start('gameOverScene');
+            } else {
+              startGatePassage = true;
             }
 
             break;
 
             // Player collides with ending gate. Stop the timer (should determine directionality)
           case (pair.isSensor && (bALabel === 'moPlayer1' || bBLabel === 'moPlayer1') && (bALabel === 'moEndingGateSensor' || bBLabel === 'moStartingGateSensor')):
-            clearInterval(timerInterval);
-            winner = true;
-            game.scene.start('gameOverScene');
-            break;
-            // plain buoy
 
+            if (startGatePassage === true) {
+              winner = true;
+              game.scene.start('gameOverScene');
+            } else {
+              winner = true;
+              game.scene.start('gameOverScene');
+            }
+
+            break;
+
+            // plain buoy
           case ((bALabel === 'moPlayer1' || bALabel === 'moPlainBuoy') && (bBLabel === 'moPlayer1' || bBLabel === 'moPlainBuoy')):
             player1.hullStrengh -= collPairs[i].bodyB.damage;
             break;
@@ -342,9 +351,7 @@ class GameScene extends Phaser.Scene {
             break;
             // power targets
 
-
           case ((bALabel === 'moPlayer1' || bALabel === 'moPowerTarget') && (bBLabel === 'moPowerTarget' || bBLabel === 'moPlayer1')):
-            console.log(pair);
             if (bALabel === 'moPlayer1') {
               player1.hullStrengh -= collPairs[i].bodyB.damage;
             } else if (bBLabel === 'moPlayer1') {
@@ -352,34 +359,18 @@ class GameScene extends Phaser.Scene {
             }
             break;
 
-            // other vessels
+            // any two objects.
           default:
-            // console.log(`${pair.bodyA.label} collided with ${pair.bodyB.label}`);
             if (pair.bodyA.gameObject) {
               // console.log(`Watch where your going noob!!`);
               // console.log(`${pair.bodyA.gameObject.label} collided with ${pair.bodyB.gameObject.label}`);
             } else {
               // console.log(`${pair.bodyB.gameObject.label} collided with a border... I think.`)
-              // console.log(pair);
-
-              // // remove game object when it collides with the "borders"
-              // // does not work
-              // for(let x = 0; x < powerTargets.length; x++) {
-              //   console.log(pair.bodyB.gameObject.label);
-              //   if (powerTargets[x].label === pair.bodyB.gameObject.label) {
-              //     powerTargets.splice(x, 1);
-              //     x--;
-              //     // world.remove();
-              //   }
-              // }
             }
             break;
         }
       }
     });
-
-
-
 
 
 
@@ -390,29 +381,8 @@ class GameScene extends Phaser.Scene {
 
     cursors = this.input.keyboard.createCursorKeys();
 
-
-    // // this is my exit code. when player has lost or won, transition to next scene
-    // this.input.once('pointerdown', function () {
-    //     this.scene.transition({
-    //         target: 'gameOverScene',
-    //         duration: 2000,
-    //         moveBelow: true,
-    //         onUpdate: this.transitionOut,
-    //         data: {
-    //             x: 400,
-    //             y: 300
-    //         }
-    //     });
-    // }, this);
-
   }
   update() {
-
-    // let point1 = player1.getTopRight();
-    // let point2 = player1.getBottomRight();
-    // tracker1.setPosition(point1.x, point1.y);
-    // tracker2.setPosition(point2.x, point2.y);
-
 
     if (player1.hullStrengh <= 50 && player1.hullStrengh > 20) {
       // console.log('Boat is yellow.')
@@ -453,8 +423,6 @@ class GameScene extends Phaser.Scene {
       }
     }
 
-
-
     if (cursors.left.isDown) {
       player1.setAngularVelocity(-0.05);
     } else if (cursors.right.isDown) {
@@ -477,7 +445,6 @@ let config = {
   width: 1024,
   height: 768,
   backgroundColor: '#006994',
-  // parent: 'main',
   physics: {
     default: 'matter',
     matter: {
@@ -486,16 +453,8 @@ let config = {
       },
       plugins: {
         attractors: true
-      },
-      // debug: true,
-      // debugShowBody: true,
-      // debugShowVelocity: true,
-      // debugWireframes: true
-    },
-    // arcade: {
-    //   // debug: true,
-    //   // gravity: { y: 200 }
-    // }
+      }
+    }
   },
   scene: [OpeningScene, GameScene, GameOverScene, StatusScene]
 };
@@ -503,39 +462,51 @@ let config = {
 
 let player1;
 let waterTexture;
-let boardScale = 2;
+const boardScale = 2;
+const bW = config.width * boardScale;
+const bH = config.height * boardScale;
+
 let plainBuoys = [];
-let numPlainBuoys = 2;
+const numPlainBuoys = 15;
+
 let powerTargets = [];
-let numPowerTargets = 1;
+const numPowerTargets = 5;
+
 let cursors;
-let tideContstraints = [-0.3, 0.3];
-let windConstraints = [-0.3, 0.3];
-let bW = config.width * boardScale;
-let bH = config.height * boardScale;
-let timePenelty = 0; // will add to timePeneklty for each collision
-let raceTimerStart = -35; //increment by time... 
+const tideContstraints = [-0.3, 0.3];
+const windConstraints = [-0.3, 0.3];
+
+const raceTimerStart = -35; //increment by time... 
 let raceTimer = raceTimerStart;
 let timerInterval;
+
 let resultsCamera;
 let backgroundTexture;
-let raceResultsText1;
-let raceResultsText2;
 let explosion;
 let winner = false;
+let startGatePassage = false;
+
+
+let textDefaults = {
+  font: '25px',
+  fill: '#ffffff',
+  align: 'left',
+  fontFamily: '"Roboto Condensed"',
+  strokeThickness: 2
+}
 
 let getRand = function (min, max, type) {
-  // type is undefined, float, or int
   if (type === 'int') {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
-  } else if (type === 'float') {
-
   } else {
     return Math.random() * (max - min) + min;
   }
 }
+
+
+
 
 let addBackgroundTiles = function (scene) {
   for (let x = 0; x <= boardScale; x++) {
