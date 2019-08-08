@@ -33,7 +33,6 @@ class OpeningScene extends Phaser.Scene {
 
     this.add.image(350, 350, 'markerBuouyExample').setOrigin(0, 0);
 
-
     let textLine2 = `Oh, and don't jump the gun on \nthe starting gate. You WILL be disqulaified`;
     this.add.text(35, 200, introText, textDefaults);
 
@@ -326,7 +325,6 @@ class GameScene extends Phaser.Scene {
             } else {
               startGatePassage = true;
             }
-
             break;
 
             // Player collides with ending gate. Stop the timer (should determine directionality)
@@ -339,9 +337,7 @@ class GameScene extends Phaser.Scene {
               winner = true;
               game.scene.start('gameOverScene');
             }
-
             break;
-
             // plain buoy
           case ((bALabel === 'moPlayer1' || bALabel === 'moPlainBuoy') && (bBLabel === 'moPlayer1' || bBLabel === 'moPlainBuoy')):
             player1.hullStrengh -= collPairs[i].bodyB.damage;
