@@ -7,7 +7,7 @@ insert images here
 Press 'S' to Start.
 
 # Tech
-- The application is practically all Phaser 3.
+- Phaser 3 / Matter JS
 - GIMP
 - Audacity
 
