@@ -1,2 +1,11 @@
 @import 'resets.css';
 
+body {
+    width: 100%;
+    text-align: center;
+}
+
+main {
+    margin: 20px 0px 0px 0px;
+}
+

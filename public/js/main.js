@@ -7,6 +7,7 @@ class OpeningScene extends Phaser.Scene {
   preload() {
     this.load.image('waterTexture', 'assets/waterTexture.png');
     this.load.image('arrowKeys', 'assets/arrowKeys.png');
+    this.load.image('markerBuouyExample', 'assets/markerBuoyExample.png');
   }
 
   create() {
@@ -27,15 +28,21 @@ class OpeningScene extends Phaser.Scene {
 
 
 
-    let introText = `Your mission is simple. Race between the marker buoys before\nthe clock runs out and don't hit anything! \nGreen on the left and red on the right.\n\nOh, and don't jump the gun on \nthe starting gate. You WILL be disqulaified.`;
+    let introText = `Your mission is simple. Race between the Sothern and Northern \nsets of marker buoys before the clock runs. The Nothern \nset isn't always in the same place! You must go through \nboth gates. Green on the left, red on the right. And don't\njump the starting gun! You WILL be disqualified.`;
     this.add.text(35, 200, introText, textDefaults);
 
-    let controlText = `The arrow keys control your boat (left, up, right).`
-    this.add.text(35, 450, controlText, textDefaults);
+    this.add.image(350, 350, 'markerBuouyExample').setOrigin(0, 0);
 
-    this.add.image(830, 425, 'arrowKeys').setOrigin(0, 0);
 
-    this.add.text(35, 530, "Press 'S' to start.", textDefaults);
+    let textLine2 = `Oh, and don't jump the gun on \nthe starting gate. You WILL be disqulaified`;
+    this.add.text(35, 200, introText, textDefaults);
+
+    let controlText = `The arrow keys control your boat. \n(left turn, thurst, right turn).`
+    this.add.text(35, 460, controlText, textDefaults);
+
+    this.add.image(675, 460, 'arrowKeys').setOrigin(0, 0);
+
+    this.add.text(35, 600, `Press 'S' to start.`, textDefaults);
 
   }
   update() {}
@@ -70,7 +77,7 @@ class StatusScene extends Phaser.Scene {
           raceTimeText.y = 0;
           raceTimeText.setText(`Time: ${-raceTimer} \nHull strength: ${player1.hullStrengh}`);
         }
-      }, 500);
+      }, 1000);
     }
   }
 }
@@ -263,20 +270,15 @@ class GameScene extends Phaser.Scene {
           }
         ]
       }
-    }); // player1.setFixedRotation(0); // BEB - It's unclear what 
-    player1.angle = -90;
+    }); 
+    
     player1.label = 'goPlayer1';
-    player1.setFrictionAir(0.15, 0);
-    player1.setMass(30);
+    player1.angle = -90;
     player1.hullStrengh = 100;
-    player1.setAllowDrag = true;
-
+    player1.setFrictionAir(0.15, .01);
+    player1.setMass(30);
 
     // Build sailTargets
-    // TODO - copy powerTargets and modify.
-
-
-    // Build other mobile targets... whates?
     // TODO - copy powerTargets and modify.
 
 
@@ -432,6 +434,7 @@ class GameScene extends Phaser.Scene {
       player1.inertia = 100;
       player1.inverseInertia = (1 / player1.inertia);
       player1.thrust(0.06);
+
     }
 
     powerTargets.forEach(e => {
@@ -462,6 +465,10 @@ let config = {
 
 let player1;
 let waterTexture;
+let backgroundTexture;
+let explosion;
+let resultsCamera;
+
 const boardScale = 2;
 const bW = config.width * boardScale;
 const bH = config.height * boardScale;
@@ -473,6 +480,7 @@ let powerTargets = [];
 const numPowerTargets = 5;
 
 let cursors;
+
 const tideContstraints = [-0.3, 0.3];
 const windConstraints = [-0.3, 0.3];
 
@@ -480,9 +488,6 @@ const raceTimerStart = -35; //increment by time...
 let raceTimer = raceTimerStart;
 let timerInterval;
 
-let resultsCamera;
-let backgroundTexture;
-let explosion;
 let winner = false;
 let startGatePassage = false;
 
@@ -504,8 +509,6 @@ let getRand = function (min, max, type) {
     return Math.random() * (max - min) + min;
   }
 }
-
-
 
 
 let addBackgroundTiles = function (scene) {
