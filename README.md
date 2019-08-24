@@ -6,11 +6,11 @@ insert images here
 
 Press 'S' to Start.
 
+
 # Tech
 - Phaser 3 / Matter JS
 - GIMP
 - Audacity
-
 
 # Spec
 - ~~Game is playable~~
@@ -19,7 +19,7 @@ Press 'S' to Start.
 - ~~Game is winnable~~    
 - ~~Winner/score is displayed (NO ALERTS)~~   
 - ~~Has directions - how to play~~
-- Readme.md included and filled out   
+- ~~Readme.md included and filled out~~   
 - ~~Appropriate Use of GitHub~~   
 - ~~Deployed on Github Pages~~    
 - ~~Long JS files appropriately split up~~    
